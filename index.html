@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading Management System</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/background.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/dashboard.css">
+<link rel="stylesheet" href="css/accounts.css">
+<link rel="stylesheet" href="css/strategies.css">
+<link rel="stylesheet" href="css/backtesting.css">
+<link rel="stylesheet" href="css/forms.css">
+</head>
+<body>
+
+<div class="space-bg" aria-hidden="true">
+  <canvas id="star-canvas"></canvas>
+  <div class="galaxy"></div>
+  <div class="nebula n1"></div>
+  <div class="nebula n2"></div>
+  <div class="planet p1"></div>
+  <div class="planet p2"></div>
+  <div class="planet p3"></div>
+</div>
+<div class="sun" aria-hidden="true"></div>
+
+<div class="app-shell">
+  <main class="app-main">
+    <section data-page="dashboard"   class="app-page active"></section>
+    <section data-page="accounts"    class="app-page"></section>
+    <section data-page="strategies"  class="app-page"></section>
+    <section data-page="backtesting" class="app-page"></section>
+
+    <!-- Calculator page hosts the existing tool -->
+    <section data-page="calculator" class="app-page">
+      <div class="page-head">
+        <div>
+          <div class="page-eyebrow">Risk</div>
+          <h1 class="page-title">Calculator</h1>
+          <p class="page-sub" id="calc-page-sub">XAU/USD lot sizing — inherits the active account balance automatically.</p>
+        </div>
+        <button class="btn btn-ghost" id="calc-sync-btn" type="button">Sync with active account</button>
+      </div>
+
+      <div class="wrap">
+        <!-- Metrics -->
+        <div class="metric-row">
+          <div class="metric">
+            <div class="metric-label">Balance</div>
+            <div class="metric-value c-gold" id="m-balance">$2,000</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label" id="m-daily-label">Daily limit (5%)</div>
+            <div class="metric-value c-red" id="m-daily">$100</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label" id="m-max-label">Max loss (10%)</div>
+            <div class="metric-value c-red" id="m-max">$200</div>
+          </div>
+          <div class="metric">
+            <div class="metric-label" id="m-target-label">Target (8%)</div>
+            <div class="metric-value c-green" id="m-target">$160</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-label">Account</div>
+          <div class="account-inputs">
+            <div class="input-field">
+              <label>Balance</label>
+              <div class="input-wrap balance-field">
+                <span class="sym">$</span>
+                <input type="number" id="balance-input" min="100" max="10000000" step="100" value="2000">
+              </div>
+            </div>
+            <div class="input-field">
+              <label>Daily loss limit</label>
+              <div class="input-wrap pct-field">
+                <span class="sym">%</span>
+                <input type="number" id="daily-input" min="0.1" max="100" step="0.1" value="5">
+              </div>
+            </div>
+            <div class="input-field">
+              <label>Max overall loss</label>
+              <div class="input-wrap pct-field">
+                <span class="sym">%</span>
+                <input type="number" id="maxloss-input" min="0.1" max="100" step="0.1" value="10">
+              </div>
+            </div>
+            <div class="input-field">
+              <label>Profit target</label>
+              <div class="input-wrap pct-field">
+                <span class="sym">%</span>
+                <input type="number" id="target-input" min="0.1" max="1000" step="0.1" value="8">
+              </div>
+            </div>
+          </div>
+
+          <hr class="section-sep">
+          <div class="card-label">Trade</div>
+
+          <div class="slider-row">
+            <label>Risk per trade</label>
+            <input type="range" id="risk-pct" min="0.25" max="3" step="0.25" value="1">
+            <span class="slider-val" id="risk-pct-val">1.00%</span>
+          </div>
+          <div class="slider-row">
+            <label>Stop loss</label>
+            <input type="range" id="sl-pips" min="5" max="150" step="5" value="20">
+            <span class="slider-val" id="sl-pips-val">20 pips</span>
+          </div>
+          <div class="slider-row">
+            <label>R:R ratio</label>
+            <div class="rr-group" id="rr-group">
+              <button class="rr-btn active" data-rr="2" type="button">
+                <span class="rr-ratio">1:2</span>
+                <span class="rr-tag">SOP min</span>
+              </button>
+              <button class="rr-btn" data-rr="3" type="button">
+                <span class="rr-ratio">1:3</span>
+                <span class="rr-tag">Preferred</span>
+              </button>
+              <button class="rr-btn" data-rr="4" type="button">
+                <span class="rr-ratio">1:4</span>
+                <span class="rr-tag">Grade A</span>
+              </button>
+              <button class="rr-btn" data-rr="5" type="button">
+                <span class="rr-ratio">1:5</span>
+                <span class="rr-tag">Extended</span>
+              </button>
+            </div>
+          </div>
+          <div class="slider-row">
+            <label>Trades per day</label>
+            <div style="display:flex;gap:6px;flex:1;">
+              <button class="trade-btn active" id="tb1" type="button">1 trade</button>
+              <button class="trade-btn" id="tb2" type="button">2 trades</button>
+              <button class="trade-btn" id="tb3" type="button">3 trades</button>
+            </div>
+            <span class="slider-val" id="trades-val" style="visibility:hidden">1</span>
+          </div>
+        </div>
+
+        <div class="result-grid">
+          <div class="result-card lot-card" id="lot-card">
+            <div class="result-label">Lot size</div>
+            <div class="result-value c-gold" id="r-lot">0.10</div>
+            <div class="result-sub" id="r-lot-sub">max — lot</div>
+          </div>
+          <div class="result-card">
+            <div class="result-label">$ at risk</div>
+            <div class="result-value c-red" id="r-risk">$20.00</div>
+            <div class="result-sub" id="r-risk-sub">1.00% of balance</div>
+          </div>
+          <div class="result-card">
+            <div class="result-label">Take profit</div>
+            <div class="result-value c-green" id="r-tp">40 pips</div>
+            <div class="result-sub" id="r-tp-sub">at 1:2 R:R</div>
+          </div>
+          <div class="result-card">
+            <div class="result-label">Potential profit</div>
+            <div class="result-value c-green" id="r-profit">$40.00</div>
+            <div class="result-sub" id="r-profit-sub">2× risk</div>
+          </div>
+        </div>
+
+        <footer>XAU/USD &nbsp;·&nbsp; 10 pips = $1 per 0.01 lot &nbsp;·&nbsp; Lot = Risk$ ÷ (SL pips × $10)</footer>
+      </div>
+    </section>
+  </main>
+
+  <aside class="app-sidebar" id="app-sidebar">
+    <div class="sidebar-brand">
+      <div class="gold-dot"></div>
+      <div>
+        <h1>Trading OS</h1>
+        <div class="brand-sub">Management System</div>
+      </div>
+    </div>
+
+    <div class="sidebar-account" id="sidebar-account">
+      <div class="sa-label">Active account</div>
+      <div class="sa-name" id="sa-name">—</div>
+      <div class="sa-bal" id="sa-bal">—</div>
+      <div class="sa-delta" id="sa-delta">—</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Workspace</div>
+      <button class="nav-item" data-nav="dashboard" type="button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" data-nav="accounts" type="button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 7h-3V5a3 3 0 0 0-3-3h-4a3 3 0 0 0-3 3v2H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1zM9 5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2H9z"/></svg>
+        Accounts
+      </button>
+      <button class="nav-item" data-nav="strategies" type="button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 4 7v6c0 4.4 3 8 8 9 5-1 8-4.6 8-9V7zm0 10h6c-.5 3.1-2.7 5.5-6 6.4z"/></svg>
+        Strategies
+      </button>
+      <button class="nav-item" data-nav="backtesting" type="button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h4v4H4zm6 0h10v4H10zM4 10h4v4H4zm6 0h10v4H10zM4 16h4v4H4zm6 0h10v4H10z"/></svg>
+        Backtesting
+      </button>
+      <div class="nav-section-label">Tools</div>
+      <button class="nav-item" data-nav="calculator" type="button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 4v3h10V6zm0 5v2h3v-2zm5 0v2h3v-2zm-5 4v2h3v-2zm5 0v2h3v-2z"/></svg>
+        Risk Calculator
+      </button>
+    </nav>
+
+    <button class="sidebar-add" id="sidebar-add" type="button">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      <span id="sidebar-add-label">Add New</span>
+    </button>
+
+    <div class="sidebar-footer">
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle theme">
+        <svg id="theme-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        </svg>
+        <span id="theme-label">Light</span>
+      </button>
+    </div>
+  </aside>
+</div>
+
+<style>
+  .app-page { display: none; }
+  .app-page.active { display: block; }
+  [data-page="calculator"] .wrap { max-width: 720px; margin: 0 auto; padding: 0; }
+  [data-page="calculator"] footer { margin-top: 24px; }
+</style>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

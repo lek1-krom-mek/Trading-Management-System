@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FDE68A"></stop>
+      <stop offset="45%" stop-color="#F59E0B"></stop>
+      <stop offset="100%" stop-color="#92400E"></stop>
+    </linearGradient>
+    
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1.2" result="blur"></feGaussianBlur>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"></feComposite>
+    </filter>
+  </defs>
+
+  
+  <rect width="32" height="32" rx="7" fill="#07090F"></rect>
+
+  
+  <rect x="0.75" y="0.75" width="30.5" height="30.5" rx="6.5" fill="none" stroke="url(#goldGrad)" stroke-width="1" opacity="0.35"></rect>
+
+  
+  <text x="16" y="23.5" text-anchor="middle" font-family="&#39;Inter&#39;, ui-sans-serif, system-ui, -apple-system, sans-serif" font-weight="800" font-size="22" letter-spacing="-0.5" fill="url(#goldGrad)" filter="url(#glow)">R</text>
+</svg>

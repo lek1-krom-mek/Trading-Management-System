@@ -1,0 +1,6 @@
+tms.db
+tms.db-journal
+tms.db-shm
+tms.db-wal
+uploads/bt-*
+.DS_Store

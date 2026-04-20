@@ -1,0 +1,120 @@
+/* ── Account cards ─────────────────────────────────── */
+.account-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  cursor: pointer;
+  transition: all 0.25s var(--ease);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+}
+.account-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(245, 158, 11, 0.3);
+  box-shadow: 0 10px 24px -12px rgba(0,0,0,0.5);
+}
+.account-card.is-active {
+  border-color: var(--gold-dim);
+  background: var(--gold-glow-soft);
+  box-shadow: 0 0 0 1px var(--gold-dim) inset;
+}
+.account-card-top {
+  display: flex; align-items: center; gap: 12px;
+}
+.account-avatar {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  letter-spacing: 0.02em;
+  flex-shrink: 0;
+}
+.account-meta { flex: 1; min-width: 0; }
+.account-name {
+  font-size: 14px; font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.account-company { font-size: 11px; color: var(--hint); margin-top: 2px; }
+.account-status { display: flex; align-items: center; gap: 6px; }
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+}
+.status-label { font-size: 10px; color: var(--muted); letter-spacing: 0.04em; }
+
+.account-balance-row {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: 10px;
+}
+.balance-main {
+  font-size: 24px; font-weight: 700;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+.balance-delta {
+  font-size: 12px; font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.balance-delta.pos { color: var(--green); }
+.balance-delta.neg { color: var(--red); }
+
+.balance-bar {
+  height: 5px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.balance-bar-fill { height: 100%; transition: width 0.3s var(--ease); }
+.balance-foot {
+  display: flex; justify-content: space-between;
+  font-size: 10.5px;
+  color: var(--hint);
+  font-variant-numeric: tabular-nums;
+  margin-top: -4px;
+}
+
+.strategy-chips {
+  display: flex; flex-wrap: wrap; gap: 4px;
+  margin-top: 4px;
+}
+.strategy-chips.empty {
+  font-size: 11px; color: var(--hint); font-style: italic;
+}
+.strategy-chip {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border2);
+  background: var(--surface);
+  color: var(--muted);
+  letter-spacing: 0.01em;
+}
+.strategy-chip.more { background: var(--surface); }
+
+.card-actions {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.active-pill {
+  font-size: 10px;
+  color: var(--gold);
+  background: var(--gold-glow);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border: 1px solid var(--gold-dim);
+}
