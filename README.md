@@ -1,6 +1,6 @@
 # Trading Management System
 
-Dark-themed SPA for managing prop-firm accounts, trading strategies, and backtesting sessions. Vanilla HTML/CSS/JS frontend + local Node.js/SQLite backend.
+Dark-themed SPA for managing prop-firm accounts, trading strategies, and journal sessions. Vanilla HTML/CSS/JS frontend + local Node.js/SQLite backend.
 
 ## Prerequisites
 
@@ -29,7 +29,7 @@ Then open **http://localhost:3000** in your browser.
 - `#dashboard` — account summaries + strategy win rates
 - `#accounts` — portfolio accounts (prop challenge / instant / own funds / EA)
 - `#strategies` — strategy definitions with detail drill-down
-- `#backtesting` — screenshot gallery of logged trade setups
+- `#journal` — screenshot gallery of logged trade setups
 - `#calculator` — XAU/USD risk/lot calculator (original tool)
 
 ## Dev

@@ -1,30 +1,47 @@
 /**
- * backtesting.js — Gallery + CRUD for backtesting sessions.
+ * journal.js — Gallery + CRUD for trade journal entries.
+ * (File kept at journal.js to avoid churn; store is still `journals` in DB.)
  */
 
-import { data, saveBacktest, deleteBacktest, strategyById, accountById } from './store.js';
+import { data, savejournal, deletejournal, strategyById, accountById, saveAccount } from './store.js';
 import { openFormPanel, field, textInput, numberInput, textArea, select, toggleGroup, imageUpload, multiChips, readForm } from './forms.js';
 import { el, INSTRUMENTS, TIMEFRAMES, iconSVG, toast, fmtDate, fmtRelative } from './utils.js';
 import { emptyState } from './accounts.js';
 
 let filters = { strategy: 'all', account: 'all', result: 'all', instrument: 'all' };
 
-export function renderBacktestingPage() {
-  const root = document.querySelector('[data-page="backtesting"]');
+// Signed P&L delta a journal entry contributes to its account.
+function signedDelta(result, amount) {
+  const amt = Math.abs(parseFloat(amount) || 0);
+  if (result === 'win')  return amt;
+  if (result === 'loss') return -amt;
+  return 0;
+}
+
+async function applyBalanceChange(accountId, delta) {
+  if (!accountId || !delta) return;
+  const acct = accountById(accountId);
+  if (!acct) return;
+  const updated = { ...acct, capital: (parseFloat(acct.capital) || 0) + delta };
+  await saveAccount(updated);
+}
+
+export function renderJournalPage() {
+  const root = document.querySelector('[data-page="journal"]');
   root.innerHTML = '';
   root.appendChild(el('div', { class: 'page-head' },
     el('div', {},
-      el('div', { class: 'page-eyebrow' }, 'Research'),
-      el('h1', { class: 'page-title' }, 'Backtesting'),
-      el('p', { class: 'page-sub' }, `${data.backtests.length} session${data.backtests.length === 1 ? '' : 's'} logged — store TradingView setups, results, and notes.`)
+      el('div', { class: 'page-eyebrow' }, 'Trade log'),
+      el('h1', { class: 'page-title' }, 'Journal'),
+      el('p', { class: 'page-sub' }, `${data.journals.length} entr${data.journals.length === 1 ? 'y' : 'ies'} logged — track every trade with screenshot, result, and notes.`)
     ),
-    el('button', { class: 'btn btn-primary', onClick: () => openBacktestForm() },
+    el('button', { class: 'btn btn-primary', onClick: () => openJournalForm() },
       el('span', { html: iconSVG('plus') }), ' New entry'
     )
   ));
 
-  if (!data.backtests.length) {
-    root.appendChild(emptyState('No backtests yet', 'Upload a TradingView screenshot, tag the strategy, and log the result.', 'Add backtest', () => openBacktestForm()));
+  if (!data.journals.length) {
+    root.appendChild(emptyState('No journal entries yet', 'Upload a trade screenshot, tag the strategy, and log the result.', 'Add journal entry', () => openJournalForm()));
     return;
   }
 
@@ -41,7 +58,7 @@ export function renderBacktestingPage() {
   bar.appendChild(filterSelect('Instrument', 'instrument', [{ value: 'all', label: 'All instruments' }, ...INSTRUMENTS.map(i => ({ value: i, label: i }))]));
   root.appendChild(bar);
 
-  const filtered = data.backtests.filter(b =>
+  const filtered = data.journals.filter(b =>
     (filters.strategy === 'all'   || b.strategyId === filters.strategy) &&
     (filters.account === 'all'    || b.accountId === filters.account) &&
     (filters.result === 'all'     || b.result === filters.result) &&
@@ -49,17 +66,20 @@ export function renderBacktestingPage() {
   );
 
   if (!filtered.length) {
-    root.appendChild(el('div', { class: 'empty-inline' }, 'No backtests match these filters.'));
+    root.appendChild(el('div', { class: 'empty-inline' }, 'No journal entries match these filters.'));
     return;
   }
 
   const grid = el('div', { class: 'bt-gallery' });
-  filtered.forEach(b => grid.appendChild(backtestCard(b)));
+  filtered.forEach(b => grid.appendChild(journalCard(b)));
   root.appendChild(grid);
 }
 
+// Back-compat alias for any old imports.
+export const renderjournalPage = renderJournalPage;
+
 function filterSelect(label, key, options) {
-  const sel = el('select', { class: 'filter-select', onChange: (e) => { filters[key] = e.target.value; renderBacktestingPage(); } });
+  const sel = el('select', { class: 'filter-select', onChange: (e) => { filters[key] = e.target.value; renderJournalPage(); } });
   options.forEach(o => {
     const opt = el('option', { value: o.value }, o.label);
     if (filters[key] === o.value) opt.selected = true;
@@ -71,12 +91,12 @@ function filterSelect(label, key, options) {
   );
 }
 
-function backtestCard(b) {
+function journalCard(b) {
   const s = strategyById(b.strategyId);
   const a = accountById(b.accountId);
   return el('article', { class: 'bt-card', onClick: (e) => {
       if (e.target.closest('button')) return;
-      openBacktestDetail(b);
+      openJournalDetail(b);
     } },
     el('div', { class: 'bt-thumb-lg', style: b.screenshotPath ? { backgroundImage: `url(${b.screenshotPath})` } : {} },
       !b.screenshotPath ? el('div', { class: 'bt-thumb-placeholder' }, 'no image') : null,
@@ -95,7 +115,7 @@ function backtestCard(b) {
         el('span', {}, fmtRelative(b.createdAt))
       ),
       el('div', { class: 'card-actions' },
-        el('button', { class: 'btn btn-ghost btn-sm', onClick: (e) => { e.stopPropagation(); openBacktestForm(b); } },
+        el('button', { class: 'btn btn-ghost btn-sm', onClick: (e) => { e.stopPropagation(); openJournalForm(b); } },
           el('span', { html: iconSVG('edit') }), ' Edit'
         ),
         el('span', { class: 'bt-result-mini ' + (b.result || 'be') }, (b.result || 'be').toUpperCase())
@@ -104,7 +124,7 @@ function backtestCard(b) {
   );
 }
 
-function openBacktestDetail(b) {
+export function openJournalDetail(b) {
   const s = strategyById(b.strategyId);
   const a = accountById(b.accountId);
   const overlay = el('div', { class: 'bt-detail-overlay' });
@@ -117,7 +137,7 @@ function openBacktestDetail(b) {
         )
       ),
       el('div', { class: 'bt-detail-actions' },
-        el('button', { class: 'btn btn-ghost btn-sm', onClick: () => { close(); openBacktestForm(b); } },
+        el('button', { class: 'btn btn-ghost btn-sm', onClick: () => { close(); openJournalForm(b); } },
           el('span', { html: iconSVG('edit') }), ' Edit'
         ),
         el('button', { class: 'icon-btn', onClick: () => close(), 'aria-label': 'Close' },
@@ -155,7 +175,7 @@ function metaPill(label, value, extra = '') {
   );
 }
 
-export function openBacktestForm(existing = null, defaults = {}) {
+export function openJournalForm(existing = null, defaults = {}) {
   const b = existing || { result: 'win', direction: 'long', timeframe: 'H1', instrument: 'XAU/USD', tags: [], ...defaults };
   const stratOpts = data.strategies.map(s => ({ value: s.id, label: s.name }));
   const acctOpts = [{ value: '', label: '— Unassigned —' }, ...data.accounts.map(a => ({ value: a.id, label: a.name }))];
@@ -209,32 +229,61 @@ export function openBacktestForm(existing = null, defaults = {}) {
     tagInput({ name: 'tags', values: b.tags || [] })
   );
   openFormPanel({
-    title: existing ? 'Edit backtest' : 'New backtest',
+    title: existing ? 'Edit journal entry' : 'New journal entry',
     body,
-    submitLabel: existing ? 'Save changes' : 'Save backtest',
-    onDelete: existing ? async () => { await deleteBacktest(existing.id); toast('Backtest deleted'); } : null,
+    submitLabel: existing ? 'Save changes' : 'Save entry',
+    onDelete: existing ? async () => {
+      // Reverse the account balance effect this entry had.
+      const oldDelta = signedDelta(existing.result, existing.amount);
+      await deletejournal(existing.id);
+      await applyBalanceChange(existing.accountId, -oldDelta);
+      toast('Journal entry deleted');
+    } : null,
     onSubmit: async (form) => {
       const raw = readForm(form, ['tags']);
+
+      const oldResult = existing ? existing.result : null;
+      const oldAmount = existing ? existing.amount : 0;
+      const oldAccountId = existing ? (existing.accountId || null) : null;
+
+      const newResult = raw.result;
+      const newAmount = Math.abs(parseFloat(raw.amount) || 0);
+      const newAccountId = raw.accountId || null;
+
       const obj = {
         ...b,
         strategyId: raw.strategyId,
-        accountId: raw.accountId || null,
+        accountId: newAccountId,
         instrument: raw.instrument,
         timeframe: raw.timeframe,
         direction: raw.direction,
         entryDate: raw.entryDate ? new Date(raw.entryDate).getTime() : Date.now(),
-        result: raw.result,
-        rAchieved: raw.result === 'win' ? (parseFloat(raw.rAchieved) || 0) : 0,
-        amount: Math.abs(parseFloat(raw.amount) || 0),
+        result: newResult,
+        rAchieved: newResult === 'win' ? (parseFloat(raw.rAchieved) || 0) : 0,
+        amount: newAmount,
         screenshotPath: raw.screenshotPath || b.screenshotPath || '',
         description: raw.description,
         tags: raw.tags || [],
       };
-      await saveBacktest(obj);
-      toast(existing ? 'Backtest updated' : 'Backtest saved');
+      await savejournal(obj);
+
+      // Reconcile account balance(s). Immutable updates via applyBalanceChange().
+      const oldDelta = signedDelta(oldResult, oldAmount);
+      const newDelta = signedDelta(newResult, newAmount);
+      if (oldAccountId === newAccountId) {
+        await applyBalanceChange(newAccountId, newDelta - oldDelta);
+      } else {
+        await applyBalanceChange(oldAccountId, -oldDelta);
+        await applyBalanceChange(newAccountId, newDelta);
+      }
+
+      toast(existing ? 'Journal entry updated' : 'Journal entry saved');
     }
   });
 }
+
+// Back-compat alias for older imports.
+export const openjournalForm = openJournalForm;
 
 function tagInput({ name, values = [] }) {
   const selected = new Set(values);

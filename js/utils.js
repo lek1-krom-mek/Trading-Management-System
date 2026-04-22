@@ -9,7 +9,12 @@ export function el(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);
   for (const [k, v] of Object.entries(attrs || {})) {
     if (k === 'class')     node.className = v;
-    else if (k === 'style') Object.assign(node.style, v);
+    else if (k === 'style') {
+      for (const [sk, sv] of Object.entries(v || {})) {
+        if (sk.startsWith('--')) node.style.setProperty(sk, sv);
+        else node.style[sk] = sv;
+      }
+    }
     else if (k === 'html') node.innerHTML = v;
     else if (k.startsWith('on') && typeof v === 'function') node.addEventListener(k.slice(2).toLowerCase(), v);
     else if (k === 'dataset') Object.assign(node.dataset, v);
@@ -73,6 +78,7 @@ export const ACCOUNT_STATUSES = {
   'active': { label: 'Active', color: '#4ADE80' },
   'paused': { label: 'Paused', color: '#FCD34D' },
   'passed': { label: 'Passed', color: '#60A5FA' },
+  'funded': { label: 'Funded', color: '#F59E0B' },
   'blown':  { label: 'Blown',  color: '#F87171' },
 };
 
@@ -107,10 +113,10 @@ export function sparkline(values, w = 120, h = 34, color = '#F59E0B') {
   return svg;
 }
 
-/** Build equity curve from backtests (assumes R values represent units of risk). */
-export function equityCurve(backtests, startAt = 0) {
-  if (!backtests.length) return [];
-  const sorted = [...backtests].sort((a, b) => (a.createdAt||0) - (b.createdAt||0));
+/** Build equity curve from journals (assumes R values represent units of risk). */
+export function equityCurve(journals, startAt = 0) {
+  if (!journals.length) return [];
+  const sorted = [...journals].sort((a, b) => (a.createdAt||0) - (b.createdAt||0));
   let eq = startAt;
   const out = [eq];
   for (const b of sorted) {
@@ -151,7 +157,7 @@ export function iconSVG(name) {
     dashboard: '<path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z"/>',
     accounts:  '<path d="M20 7h-3V5a3 3 0 0 0-3-3h-4a3 3 0 0 0-3 3v2H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1zM9 5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2H9z"/>',
     strategies:'<path d="M12 2 4 7v6c0 4.4 3 8 8 9 5-1 8-4.6 8-9V7zm0 10h6c-.5 3.1-2.7 5.5-6 6.4z"/>',
-    backtesting:'<path d="M4 4h4v4H4zm6 0h10v4H10zM4 10h4v4H4zm6 0h10v4H10zM4 16h4v4H4zm6 0h10v4H10z"/>',
+    journal:'<path d="M4 4h4v4H4zm6 0h10v4H10zM4 10h4v4H4zm6 0h10v4H10zM4 16h4v4H4zm6 0h10v4H10z"/>',
     calculator:'<path d="M7 2h10a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm0 4v3h10V6zm0 5v2h3v-2zm5 0v2h3v-2zm-5 4v2h3v-2zm5 0v2h3v-2z"/>',
     plus:      '<path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>',
     close:     '<path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>',

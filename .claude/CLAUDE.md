@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-A dark-themed, data-rich **single-page application** for managing trading portfolio accounts, strategies, and backtesting sessions. Vanilla HTML/CSS/JS frontend (ES modules, no framework, no build step) backed by a **local Node.js + SQLite server**.
+A dark-themed, data-rich **single-page application** for managing trading portfolio accounts, strategies, and journal sessions. Vanilla HTML/CSS/JS frontend (ES modules, no framework, no build step) backed by a **local Node.js + SQLite server**.
 
 Original design spec: [`.claude/trading-management-system-prompt.md`](.claude/trading-management-system-prompt.md)
 
@@ -14,7 +14,7 @@ Original design spec: [`.claude/trading-management-system-prompt.md`](.claude/tr
 - **Backend**: Node.js + Express (`server/`)
 - **Database**: SQLite via `better-sqlite3` — single `tms.db` file in project root, openable in DB Browser for SQLite / DBeaver / TablePlus
 - **File uploads**: Screenshots saved to `uploads/` via `multer`, path stored in DB
-- **Routing**: Hash-based SPA (`#dashboard`, `#accounts`, `#strategies`, `#backtesting`, `#calculator`)
+- **Routing**: Hash-based SPA (`#dashboard`, `#accounts`, `#strategies`, `#journal`, `#calculator`)
 - **Charts**: Native `<canvas>` — no chart library
 - **Active account**: kept in browser `localStorage` (`tms-active-account`)
 
@@ -34,7 +34,7 @@ css/
   background.css            # Starfield / space background
   layout.css                # Header, sidebar, main grid
   forms.css                 # Slide-in form panel + field styles
-  dashboard.css, accounts.css, strategies.css, backtesting.css
+  dashboard.css, accounts.css, strategies.css, journal.css
 
 js/
   db.js                     # HTTP client: fetch-based wrapper around /api (getAll/get/put/del) + uploadScreenshot()
@@ -43,7 +43,7 @@ js/
   state.js                  # Calculator state
   utils.js                  # el(), fmtMoney(), fmtPct(), ACCOUNT_TYPES, initials(), sparkline()
   ui.js, theme.js, background.js, main.js
-  dashboard.js, accounts.js, strategies.js, backtesting.js
+  dashboard.js, accounts.js, strategies.js, journal.js
   forms.js                  # Slide-in panel + field builders. imageUpload uploads files via /api/upload
 
 server/
@@ -81,8 +81,8 @@ tms.db (SQLite) ← server.js (/api) ← db.js (fetch) ← store.js (cache + eve
 1. User drops/pastes/selects image in `imageUpload()` (forms.js)
 2. Shows instant local preview via `URL.createObjectURL()`
 3. POSTs file to `/api/upload` (multer saves to `uploads/bt-<timestamp>-<rand>.png`)
-4. Server returns `{ path: '/uploads/bt-...png' }` — stored as `screenshotPath` on the backtest row
-5. On backtest delete, server unlinks the file
+4. Server returns `{ path: '/uploads/bt-...png' }` — stored as `screenshotPath` on the journal row
+5. On journal delete, server unlinks the file
 
 ### Routing
 - Pages register handlers via `register(name, fn)` in `main.js`
@@ -100,10 +100,10 @@ All mounted under `/api` on `localhost:3000`.
 | GET | `/:store` | List all (sorted by `created_at DESC`) |
 | GET | `/:store/:id` | Fetch one |
 | PUT | `/:store` | Upsert (body = full object, `id` required) |
-| DELETE | `/:store/:id` | Delete (cascades screenshot file for backtests) |
+| DELETE | `/:store/:id` | Delete (cascades screenshot file for journals) |
 | POST | `/upload` | Multipart file upload → returns `{ path }` |
 
-`:store` ∈ `accounts` | `strategies` | `backtests`.
+`:store` ∈ `accounts` | `strategies` | `journals`.
 
 ---
 
@@ -123,7 +123,7 @@ strategies(
   created_at INTEGER, updated_at INTEGER
 )
 
-backtests(
+journals(
   id TEXT PK, strategy_id FK→strategies(id) SET NULL,
   account_id FK→accounts(id) SET NULL,
   instrument, timeframe, direction,

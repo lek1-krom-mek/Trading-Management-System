@@ -1,6 +1,6 @@
 /**
  * router.js — Hash-based SPA router.
- * Routes: #dashboard, #accounts, #strategies, #backtesting, #calculator
+ * Routes: #dashboard, #accounts, #strategies, #journal, #calculator
  * Supports sub-routes via query-ish suffix: #strategies/:id, #accounts/:id
  */
 

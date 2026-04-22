@@ -14,7 +14,7 @@ import { register, initRouter, current, go } from './router.js';
 import { renderDashboardPage }           from './dashboard.js';
 import { renderAccountsPage, renderAccountDetail, openAccountForm } from './accounts.js';
 import { renderStrategiesPage, renderStrategyDetail, openStrategyForm } from './strategies.js';
-import { renderBacktestingPage, openBacktestForm } from './backtesting.js';
+import { renderJournalPage, openJournalForm } from './journal.js';
 import { el, fmtMoney, fmtPct, ACCOUNT_TYPES, initials } from './utils.js';
 import { db, uid } from './db.js';
 
@@ -27,7 +27,7 @@ window.toggleTheme = toggleTheme;
 register('dashboard',   renderDashboardPage);
 register('accounts',    (param) => param ? renderAccountDetail(param) : renderAccountsPage());
 register('strategies',  (param) => param ? renderStrategyDetail(param) : renderStrategiesPage());
-register('backtesting', renderBacktestingPage);
+register('journal',     renderJournalPage);
 register('calculator',  () => { renderCalcMeta(); });
 
 function renderCalcMeta() {
@@ -68,7 +68,7 @@ function updateAddButton() {
     dashboard: 'Quick Add',
     accounts:  'Add Account',
     strategies:'Add Strategy',
-    backtesting: 'Add Backtest',
+    journal:   'Add Journal',
     calculator: 'Add Account',
   };
   label.textContent = map[route.name] || 'Add New';
@@ -79,7 +79,7 @@ function onAddClick() {
   switch (route.name) {
     case 'accounts':    openAccountForm();   break;
     case 'strategies':  openStrategyForm();  break;
-    case 'backtesting': openBacktestForm();  break;
+    case 'journal':     openJournalForm();   break;
     case 'calculator':
     case 'dashboard':
     default:            openAccountForm();   break;
@@ -127,8 +127,8 @@ function syncCalcWithActiveAccount() {
 }
 
 // ── One-time cleanup migration ──────────────────────────
-// Earlier builds seeded sample strategies + backtests. Wipe those for any
-// existing user so "Attached strategies" and the backtests list start clean.
+// Earlier builds seeded sample strategies + journals. Wipe those for any
+// existing user so "Attached strategies" and the journals list start clean.
 async function cleanupSeededSamples() {
   if (localStorage.getItem('tms-cleaned-seeds-v1')) return;
   const SEEDED_STRATS = new Set(['London OB Retracement', 'NY FVG Fill', 'HTF CHoCH Reversal']);
@@ -137,8 +137,8 @@ async function cleanupSeededSamples() {
     const staleIds = new Set(strats.filter(s => SEEDED_STRATS.has(s.name)).map(s => s.id));
     if (staleIds.size) {
       for (const id of staleIds) await db.del('strategies', id);
-      const bts = await db.getAll('backtests');
-      for (const b of bts) if (staleIds.has(b.strategyId)) await db.del('backtests', b.id);
+      const bts = await db.getAll('journals');
+      for (const b of bts) if (staleIds.has(b.strategyId)) await db.del('journals', b.id);
       const accs = await db.getAll('accounts');
       for (const a of accs) {
         if (Array.isArray(a.strategyIds) && a.strategyIds.some(id => staleIds.has(id))) {
@@ -153,9 +153,9 @@ async function cleanupSeededSamples() {
 
 // ── Seed demo data ──────────────────────────────────────
 async function seedIfEmpty() {
-  if (data.accounts.length || data.strategies.length || data.backtests.length) return;
+  if (data.accounts.length || data.strategies.length || data.journals.length) return;
 
-  // Seed a few demo accounts only (no strategies, no backtests).
+  // Seed a few demo accounts only (no strategies, no journals).
   // The user will attach their own strategies as they create them.
   const acc1 = { id: uid(), name: 'FTMO 100K — Phase 1', type: 'prop-challenge',
     company: 'FTMO', accountNumber: '1520342', status: 'active',
@@ -217,7 +217,7 @@ async function boot() {
   await loadAll();
   await cleanupSeededSamples();
   await loadAll();
-  if (!localStorage.getItem('tms-seeded') && !data.accounts.length && !data.strategies.length && !data.backtests.length) {
+  if (!localStorage.getItem('tms-seeded') && !data.accounts.length && !data.strategies.length && !data.journals.length) {
     await seedIfEmpty();
     localStorage.setItem('tms-seeded', '1');
     await loadAll();
@@ -233,7 +233,7 @@ async function boot() {
       dashboard: renderDashboardPage,
       accounts:  () => r.param ? renderAccountDetail(r.param) : renderAccountsPage(),
       strategies: () => r.param ? renderStrategyDetail(r.param) : renderStrategiesPage(),
-      backtesting: renderBacktestingPage,
+      journal:   renderJournalPage,
       calculator: renderCalcMeta,
     };
     routes[r.name]?.();

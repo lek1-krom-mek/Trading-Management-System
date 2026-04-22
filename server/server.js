@@ -23,14 +23,33 @@ fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
+
+// Pre-schema migration: older DBs had a `backtests` table; rename it to
+// `journals` so CREATE TABLE IF NOT EXISTS sees it and skips creation.
+try {
+  const tableNames = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map(r => r.name);
+  if (tableNames.includes('backtests') && !tableNames.includes('journals')) {
+    const migrate = db.transaction(() => {
+      db.exec('DROP INDEX IF EXISTS idx_backtests_strategy');
+      db.exec('DROP INDEX IF EXISTS idx_backtests_account');
+      db.exec('DROP INDEX IF EXISTS idx_backtests_created');
+      db.exec('ALTER TABLE backtests RENAME TO journals');
+    });
+    migrate();
+    console.log('[migrate] renamed backtests → journals');
+  }
+} catch (err) {
+  console.warn('[migrate] backtests → journals:', err.message);
+}
+
 db.exec(fs.readFileSync(SCHEMA_PATH, 'utf8'));
 
 // Lightweight migrations for older DB files
 try {
-  const cols = db.prepare('PRAGMA table_info(backtests)').all().map(c => c.name);
-  if (!cols.includes('amount')) db.exec('ALTER TABLE backtests ADD COLUMN amount REAL');
+  const cols = db.prepare('PRAGMA table_info(journals)').all().map(c => c.name);
+  if (!cols.includes('amount')) db.exec('ALTER TABLE journals ADD COLUMN amount REAL');
 } catch (err) {
-  console.warn('[migrate] backtests.amount:', err.message);
+  console.warn('[migrate] journals.amount:', err.message);
 }
 
 // ── Field mapping (snake_case DB ↔ camelCase JS) ─────────
@@ -93,7 +112,7 @@ const MAPPERS = {
       updatedAt: r.updated_at,
     }),
   },
-  backtests: {
+  journals: {
     toDb: b => ({
       id: b.id,
       strategy_id: b.strategyId ?? null,
@@ -199,9 +218,9 @@ app.delete('/api/:store/:id', (req, res) => {
   const { store, id } = req.params;
   if (!isStore(store)) return res.status(404).json({ error: 'Unknown store' });
 
-  // Cascade: delete screenshot file when removing a backtest
-  if (store === 'backtests') {
-    const row = db.prepare('SELECT screenshot_path FROM backtests WHERE id = ?').get(id);
+  // Cascade: delete screenshot file when removing a journal
+  if (store === 'journals') {
+    const row = db.prepare('SELECT screenshot_path FROM journals WHERE id = ?').get(id);
     if (row?.screenshot_path) deleteUpload(row.screenshot_path);
   }
 

@@ -34,7 +34,7 @@ export function renderStrategiesPage() {
 function strategyCard(s) {
   const stats = strategyStats(s.id);
   const accts = accountsUsingStrategy(s.id);
-  const bts = data.backtests.filter(b => b.strategyId === s.id);
+  const bts = data.journals.filter(b => b.strategyId === s.id);
   const last = bts[0];
   const curve = equityCurve(bts);
   const card = el('article', { class: 'strategy-card', onClick: (e) => {
@@ -95,7 +95,7 @@ export function renderStrategyDetail(id) {
   if (!s) { go('strategies'); return; }
   const stats = strategyStats(s.id);
   const accts = accountsUsingStrategy(s.id);
-  const bts = data.backtests.filter(b => b.strategyId === s.id);
+  const bts = data.journals.filter(b => b.strategyId === s.id);
   root.innerHTML = '';
   root.appendChild(el('div', { class: 'page-head' },
     el('div', {},
@@ -154,14 +154,14 @@ export function renderStrategyDetail(id) {
   ));
   const btSection = el('div', { class: 'card' },
     el('div', { class: 'card-head-row' },
-      el('div', { class: 'card-label' }, 'Backtesting sessions · ' + bts.length),
-      el('button', { class: 'btn btn-ghost btn-sm', onClick: () => go('backtesting') }, 'View all')
+      el('div', { class: 'card-label' }, 'Journal entries · ' + bts.length),
+      el('button', { class: 'btn btn-ghost btn-sm', onClick: () => go('journal') }, 'View all')
     )
   );
   if (bts.length) {
     const thumbs = el('div', { class: 'bt-thumb-grid' });
     bts.slice(0, 8).forEach(b => {
-      thumbs.appendChild(el('div', { class: 'bt-thumb', onClick: () => go('backtesting'), style: b.screenshotPath ? { backgroundImage: `url(${b.screenshotPath})` } : {} },
+      thumbs.appendChild(el('div', { class: 'bt-thumb', onClick: () => go('journal'), style: b.screenshotPath ? { backgroundImage: `url(${b.screenshotPath})` } : {} },
         el('div', { class: 'bt-thumb-label' },
           el('span', { class: 'bt-result ' + b.result }, b.result?.toUpperCase()),
           el('span', {}, b.rAchieved ? b.rAchieved + 'R' : '')
@@ -170,7 +170,7 @@ export function renderStrategyDetail(id) {
     });
     btSection.appendChild(thumbs);
   } else {
-    btSection.appendChild(el('div', { class: 'muted-text', style: { padding: '12px 0' } }, 'No backtests logged for this strategy yet.'));
+    btSection.appendChild(el('div', { class: 'muted-text', style: { padding: '12px 0' } }, 'No journal entries logged for this strategy yet.'));
   }
   root.appendChild(btSection);
 }

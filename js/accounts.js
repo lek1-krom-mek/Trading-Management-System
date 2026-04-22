@@ -6,7 +6,7 @@ import { data, saveAccount, deleteAccount, strategyById, setActiveAccount } from
 import { openFormPanel, field, textInput, numberInput, select, multiChips, toggleGroup, readForm } from './forms.js';
 import { el, ACCOUNT_TYPES, ACCOUNT_STATUSES, initials, fmtMoney, fmtPct, iconSVG, toast, sparkline } from './utils.js';
 import { go } from './router.js';
-import { openBacktestForm } from './backtesting.js';
+import { openJournalForm } from './journal.js';
 
 export function renderAccountsPage() {
   const root = document.querySelector('[data-page="accounts"]');
@@ -82,7 +82,11 @@ function accountCard(a) {
       el('button', { class: 'btn btn-ghost btn-sm', onClick: () => openAccountForm(a) },
         el('span', { html: iconSVG('edit') }), ' Edit'
       ),
-      isActive ? el('span', { class: 'active-pill' }, 'Active') : el('button', { class: 'btn btn-ghost btn-sm', onClick: () => { setActiveAccount(a.id); toast(`${a.name} set as active`); } }, 'Set active')
+      isActive
+        ? el('span', { class: 'active-pill' }, 'Active')
+        : (a.status === 'passed' || a.status === 'blown')
+          ? null
+          : el('button', { class: 'btn btn-ghost btn-sm', onClick: () => { setActiveAccount(a.id); toast(`${a.name} set as active`); } }, 'Set active')
     )
   );
   return card;
@@ -229,7 +233,7 @@ export function renderAccountDetail(id) {
   const type = ACCOUNT_TYPES[a.type] || ACCOUNT_TYPES['own-funds'];
   const status = ACCOUNT_STATUSES[a.status] || ACCOUNT_STATUSES.active;
   const strategies = (a.strategyIds || []).map(strategyById).filter(Boolean);
-  const trades = data.backtests.filter(b => b.accountId === a.id);
+  const trades = data.journals.filter(b => b.accountId === a.id);
   const wins = trades.filter(t => t.result === 'win').length;
   const losses = trades.filter(t => t.result === 'loss').length;
   const be = trades.filter(t => t.result === 'be').length;
@@ -278,8 +282,10 @@ export function renderAccountDetail(id) {
         ? el('button', { class: 'btn btn-active', type: 'button', disabled: true, title: 'This is your active account' },
             el('span', { html: iconSVG('check') }), ' Active'
           )
-        : el('button', { class: 'btn btn-ghost', onClick: () => { setActiveAccount(a.id); toast(`${a.name} set as active`); } }, 'Set active'),
-      el('button', { class: 'btn btn-primary', onClick: () => openBacktestForm(null, { accountId: a.id }) },
+        : (a.status === 'passed' || a.status === 'blown')
+          ? null
+          : el('button', { class: 'btn btn-ghost', onClick: () => { setActiveAccount(a.id); toast(`${a.name} set as active`); } }, 'Set active'),
+      el('button', { class: 'btn btn-primary', onClick: () => openJournalForm(null, { accountId: a.id }) },
         el('span', { html: iconSVG('plus') }), ' Add trade'
       )
     )
@@ -343,7 +349,7 @@ export function renderAccountDetail(id) {
   const tradesSection = el('section', { class: 'card' },
     el('div', { class: 'card-head-row' },
       el('div', { class: 'card-label' }, `Trades · ${trades.length}`),
-      el('button', { class: 'btn btn-primary btn-sm', onClick: () => openBacktestForm(null, { accountId: a.id }) },
+      el('button', { class: 'btn btn-primary btn-sm', onClick: () => openJournalForm(null, { accountId: a.id }) },
         el('span', { html: iconSVG('plus') }), ' Add trade'
       )
     )
@@ -356,7 +362,7 @@ export function renderAccountDetail(id) {
       const amtLabel = amt
         ? (t.result === 'loss' ? '-' : t.result === 'win' ? '+' : '') + fmtMoney(amt, { dp: 0 })
         : (t.rAchieved ? t.rAchieved + 'R' : '');
-      grid.appendChild(el('div', { class: 'bt-thumb', onClick: () => openBacktestForm(t), style: t.screenshotPath ? { backgroundImage: `url(${t.screenshotPath})` } : {} },
+      grid.appendChild(el('div', { class: 'bt-thumb', onClick: () => openJournalForm(t), style: t.screenshotPath ? { backgroundImage: `url(${t.screenshotPath})` } : {} },
         el('div', { class: 'bt-thumb-label' },
           el('span', { class: 'bt-result ' + (t.result || 'be') }, (t.result || 'be').toUpperCase()),
           el('span', {}, amtLabel)

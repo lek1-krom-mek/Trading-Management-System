@@ -2,7 +2,7 @@
 
 ## Project Vision
 
-Design and build a full-featured **Trading Management System** — a dark-themed, data-rich web application where a trader can manage multiple portfolio accounts (prop firm, own funds, EA robots), define and attach trading strategies, and store backtesting results with screenshots and notes. The system grows out of an existing XAU/USD risk calculator, so visual continuity (dark space theme, gold accents, card-based layout) must be preserved.
+Design and build a full-featured **Trading Management System** — a dark-themed, data-rich web application where a trader can manage multiple portfolio accounts (prop firm, own funds, EA robots), define and attach trading strategies, and store journal results with screenshots and notes. The system grows out of an existing XAU/USD risk calculator, so visual continuity (dark space theme, gold accents, card-based layout) must be preserved.
 
 ---
 
@@ -28,7 +28,7 @@ Design and build a full-featured **Trading Management System** — a dark-themed
 │                                             │                  │
 │  Main Content Area                          │  ─ Accounts      │
 │  (changes per page)                         │  ─ Strategies    │
-│                                             │  ─ Backtesting   │
+│                                             │  ─ journal   │
 │                                             │                  │
 │                                             │  [+ Add New]     │
 └─────────────────────────────────────────────┴──────────────────┘
@@ -60,7 +60,7 @@ The **right sidebar** is always visible. Each nav item links to its dedicated pa
 
 #### C. Recent Activity Feed
 - Last 10 trade journal entries (if journal feature is added later)
-- Last 3 backtesting sessions uploaded
+- Last 3 journal sessions uploaded
 - Timestamp, strategy tag, account tag
 
 #### D. Risk Calculator Widget (existing)
@@ -122,7 +122,7 @@ Each strategy card shows:
 - Instruments (XAU/USD, indices, forex — pills)
 - Win rate (overall)
 - Accounts attached to this strategy (avatar chips)
-- Last backtested date
+- Last journaled date
 
 #### Add / Edit Strategy Form
 Fields:
@@ -145,18 +145,18 @@ Fields:
 
 #### Strategy Detail Page (click to expand)
 - Full description
-- Performance stats pulled from backtesting entries (total trades, win %, avg R:R, profit factor, max drawdown)
-- List of linked backtesting sessions with thumbnails
+- Performance stats pulled from journal entries (total trades, win %, avg R:R, profit factor, max drawdown)
+- List of linked journal sessions with thumbnails
 - Accounts using this strategy
 
 ---
 
-### 4. Backtesting Page
+### 4. journal Page
 
-**Purpose**: Store, browse, and review backtesting sessions done in TradingView.
+**Purpose**: Store, browse, and review journal sessions done in TradingView.
 
-#### Backtesting Gallery
-- Masonry or 3-column grid of backtesting cards
+#### journal Gallery
+- Masonry or 3-column grid of journal cards
 - Each card:
   - Screenshot thumbnail (uploaded image)
   - Strategy tag (color chip)
@@ -169,7 +169,7 @@ Fields:
 
 - Filter bar: by strategy, by account, by result (Win/Loss/BE), by instrument, by date range
 
-#### Add Backtesting Entry Form (slide-in or full modal)
+#### Add journal Entry Form (slide-in or full modal)
 Fields:
 - **Strategy** (select from strategies list — required)
 - **Account** (select which account this data applies to)
@@ -185,7 +185,7 @@ Fields:
 - **Description** (textarea — what you saw, why you entered, what happened)
 - **Tags** (free-form chips, e.g. "clean setup", "late entry", "news spike")
 
-#### Backtesting Detail View (click card → expand)
+#### journal Detail View (click card → expand)
 - Large screenshot display
 - Full description
 - All metadata (strategy, account, instrument, timeframe, result, R)
@@ -216,7 +216,7 @@ Fields:
   createdAt, updatedAt
 }
 
-// backtests[]
+// journals[]
 {
   id, strategyId, accountId,
   instrument, timeframe, direction,
@@ -292,24 +292,24 @@ Fields:
    ```
    css/
      base.css, components.css, background.css
-     + accounts.css, strategies.css, backtesting.css
+     + accounts.css, strategies.css, journal.css
    js/
      state.js, calc.js, ui.js, theme.js, background.js, main.js
      + db.js         (IndexedDB wrapper)
      + accounts.js   (account CRUD + render)
      + strategies.js (strategy CRUD + render)
-     + backtesting.js (backtest CRUD + render)
+     + journal.js (journal CRUD + render)
      + router.js     (hash-based SPA routing)
    index.html        (updated with all sections)
    ```
 
-2. Routing via `location.hash` (`#dashboard`, `#accounts`, `#strategies`, `#backtesting`)
+2. Routing via `location.hash` (`#dashboard`, `#accounts`, `#strategies`, `#journal`)
 
-3. All CRUD operations (Create, Read, Update, Delete) for accounts, strategies, backtests
+3. All CRUD operations (Create, Read, Update, Delete) for accounts, strategies, journals
 
 4. Strategy-to-account attachment working bidirectionally (attach strategy to account, see accounts on strategy detail)
 
-5. Backtesting image upload → stored in IndexedDB, displayed as `<img>` from base64
+5. journal image upload → stored in IndexedDB, displayed as `<img>` from base64
 
 6. Dashboard aggregating live stats from stored data
 

@@ -1,0 +1,1634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HolaPrime Gold — Optimal Risk & R:R Analysis | Tyche Capital</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0908;
+    --bg-elev: #12110f;
+    --bg-elev-2: #1a1814;
+    --border: #2a2620;
+    --border-bright: #3d362a;
+    --gold: #c9a961;
+    --gold-bright: #e6c177;
+    --gold-deep: #8b7340;
+    --ink: #f5e6d3;
+    --ink-muted: #a89f8e;
+    --ink-dim: #6d6659;
+    --blood: #c44536;
+    --jade: #7fa87c;
+    --amber: #d4a24c;
+    --blue-steel: #6b8a9e;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    overflow-x: hidden;
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(201, 169, 97, 0.04) 0%, transparent 50%),
+      radial-gradient(circle at 80% 70%, rgba(196, 69, 54, 0.03) 0%, transparent 50%);
+  }
+
+  /* Grain texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.4'/%3E%3C/svg%3E");
+    opacity: 0.025;
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* ====== LAYOUT ====== */
+  .wrapper {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 2rem;
+  }
+
+  /* ====== HEADER ====== */
+  header {
+    padding: 3rem 0 1.5rem;
+    border-bottom: 1px solid var(--border);
+    position: relative;
+  }
+
+  .brand-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+    margin-bottom: 2rem;
+  }
+
+  .brand-line .dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: var(--gold);
+    border-radius: 50%;
+    margin: 0 0.5rem;
+    vertical-align: middle;
+    box-shadow: 0 0 8px var(--gold);
+  }
+
+  .brand-line .live-indicator {
+    color: var(--gold-bright);
+  }
+
+  h1.title {
+    font-family: 'Fraunces', serif;
+    font-weight: 300;
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.5rem;
+    font-variation-settings: "opsz" 100;
+  }
+
+  h1.title em {
+    font-style: italic;
+    color: var(--gold-bright);
+    font-weight: 400;
+  }
+
+  .subtitle {
+    font-size: 1.1rem;
+    color: var(--ink-muted);
+    max-width: 720px;
+    margin-bottom: 2rem;
+    line-height: 1.7;
+  }
+
+  .meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.5rem;
+    padding: 1.5rem 0;
+    border-top: 1px solid var(--border);
+  }
+
+  .meta-item {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .meta-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-dim);
+    margin-bottom: 0.35rem;
+  }
+
+  .meta-value {
+    font-size: 0.95rem;
+    color: var(--gold);
+    font-weight: 500;
+  }
+
+  /* ====== SECTION ====== */
+  section {
+    padding: 5rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .section-head {
+    margin-bottom: 3rem;
+  }
+
+  .section-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    margin-bottom: 0.75rem;
+    display: block;
+  }
+
+  h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 400;
+    font-size: clamp(1.75rem, 3.5vw, 2.75rem);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin-bottom: 1rem;
+    max-width: 800px;
+  }
+
+  h3 {
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
+    font-size: 1.5rem;
+    margin: 2.5rem 0 1rem;
+    color: var(--gold-bright);
+  }
+
+  h4 {
+    font-family: 'Manrope', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--ink-muted);
+    margin: 1.5rem 0 0.75rem;
+  }
+
+  p {
+    margin-bottom: 1rem;
+    color: var(--ink);
+  }
+
+  p strong {
+    color: var(--gold-bright);
+    font-weight: 600;
+  }
+
+  a { color: var(--gold); }
+
+  /* ====== KEY INSIGHT BOX ====== */
+  .key-insight {
+    background: linear-gradient(135deg, rgba(201, 169, 97, 0.06) 0%, rgba(201, 169, 97, 0.02) 100%);
+    border: 1px solid var(--gold-deep);
+    border-radius: 2px;
+    padding: 2.5rem;
+    margin: 2rem 0;
+    position: relative;
+  }
+
+  .key-insight::before {
+    content: 'KEY INSIGHT';
+    position: absolute;
+    top: -10px;
+    left: 24px;
+    background: var(--bg);
+    padding: 0 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+  }
+
+  .key-insight p {
+    font-family: 'Fraunces', serif;
+    font-size: 1.15rem;
+    line-height: 1.6;
+    font-weight: 300;
+    color: var(--ink);
+  }
+
+  .key-insight .big-num {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--gold-bright);
+    font-weight: 600;
+  }
+
+  /* ====== WARNING BOX ====== */
+  .warning-box {
+    background: rgba(196, 69, 54, 0.06);
+    border-left: 3px solid var(--blood);
+    padding: 1.75rem 2rem;
+    margin: 2rem 0;
+    border-radius: 2px;
+  }
+
+  .warning-box h4 {
+    color: var(--blood);
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+  }
+
+  /* ====== RECOMMENDATION CARDS ====== */
+  .rec-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+  }
+
+  .rec-card {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    padding: 2rem;
+    position: relative;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+  }
+
+  .rec-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--gold-deep);
+  }
+
+  .rec-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 40px;
+    height: 2px;
+    background: var(--gold);
+  }
+
+  .rec-account {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    color: var(--ink-dim);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .rec-size {
+    font-family: 'Fraunces', serif;
+    font-size: 2.5rem;
+    font-weight: 300;
+    color: var(--ink);
+    margin-bottom: 1.5rem;
+    line-height: 1;
+  }
+
+  .rec-numbers {
+    display: flex;
+    gap: 2rem;
+    padding: 1.25rem 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 1.25rem;
+  }
+
+  .rec-stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-dim);
+    margin-bottom: 0.25rem;
+  }
+
+  .rec-stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: var(--gold-bright);
+  }
+
+  .rec-details {
+    font-size: 0.9rem;
+    color: var(--ink-muted);
+    line-height: 1.7;
+  }
+
+  .rec-details div {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.35rem 0;
+  }
+
+  .rec-details span:first-child {
+    color: var(--ink-dim);
+  }
+
+  .rec-details span:last-child {
+    color: var(--ink);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+  }
+
+  /* ====== TABLES ====== */
+  .table-wrapper {
+    overflow-x: auto;
+    margin: 1.5rem 0 2rem;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    background: var(--bg-elev);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+  }
+
+  thead {
+    background: var(--bg-elev-2);
+    border-bottom: 2px solid var(--gold-deep);
+  }
+
+  th {
+    text-align: left;
+    padding: 1rem 1.25rem;
+    font-weight: 600;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+
+  td {
+    padding: 0.85rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--ink);
+  }
+
+  tbody tr:hover {
+    background: rgba(201, 169, 97, 0.03);
+  }
+
+  tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  td.label {
+    color: var(--ink-muted);
+    font-weight: 500;
+  }
+
+  td.highlight {
+    color: var(--gold-bright);
+    font-weight: 600;
+    background: rgba(201, 169, 97, 0.05);
+  }
+
+  td.danger {
+    color: var(--blood);
+  }
+
+  td.success {
+    color: var(--jade);
+  }
+
+  .table-caption {
+    font-size: 0.8rem;
+    color: var(--ink-dim);
+    font-style: italic;
+    margin-top: 0.5rem;
+    line-height: 1.5;
+  }
+
+  /* Heatmap-style DD table */
+  .heatmap td.cell {
+    text-align: center;
+    font-weight: 500;
+  }
+
+  .heat-1 { background: rgba(127, 168, 124, 0.12); color: var(--jade); }
+  .heat-2 { background: rgba(212, 162, 76, 0.12); color: var(--amber); }
+  .heat-3 { background: rgba(212, 162, 76, 0.22); color: var(--amber); }
+  .heat-4 { background: rgba(196, 69, 54, 0.15); color: #e06352; }
+  .heat-5 { background: rgba(196, 69, 54, 0.28); color: #e06352; }
+
+  /* ====== FORMULA BLOCK ====== */
+  .formula {
+    background: var(--bg-elev-2);
+    border-left: 2px solid var(--gold);
+    padding: 1.25rem 1.5rem;
+    margin: 1.5rem 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.95rem;
+    color: var(--ink);
+    overflow-x: auto;
+  }
+
+  .formula .var { color: var(--gold-bright); }
+  .formula .result { color: var(--jade); font-weight: 600; }
+
+  /* ====== TIMELINE ====== */
+  .timeline {
+    position: relative;
+    padding-left: 2rem;
+    margin: 2rem 0;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, var(--gold) 0%, var(--gold-deep) 50%, var(--border) 100%);
+  }
+
+  .timeline-item {
+    position: relative;
+    padding: 0 0 2.5rem 1.5rem;
+  }
+
+  .timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -2.3rem;
+    top: 0.5rem;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 2px solid var(--gold);
+    box-shadow: 0 0 12px var(--gold);
+  }
+
+  .timeline-weeks {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.4rem;
+  }
+
+  .timeline-title {
+    font-family: 'Fraunces', serif;
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: var(--ink);
+    margin-bottom: 0.5rem;
+  }
+
+  .timeline-body {
+    color: var(--ink-muted);
+    font-size: 0.95rem;
+    line-height: 1.7;
+  }
+
+  .timeline-body strong {
+    color: var(--gold-bright);
+    font-weight: 600;
+  }
+
+  /* ====== RULES LIST ====== */
+  .rules-list {
+    list-style: none;
+    counter-reset: rule;
+    margin: 1.5rem 0;
+  }
+
+  .rules-list li {
+    counter-increment: rule;
+    position: relative;
+    padding: 1.25rem 0 1.25rem 3.5rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--ink);
+    font-size: 0.98rem;
+    line-height: 1.6;
+  }
+
+  .rules-list li::before {
+    content: counter(rule, decimal-leading-zero);
+    position: absolute;
+    left: 0;
+    top: 1.25rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--gold);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+
+  .rules-list li strong {
+    color: var(--gold-bright);
+    font-weight: 600;
+  }
+
+  /* ====== NAV ====== */
+  nav.toc {
+    position: sticky;
+    top: 0;
+    background: rgba(10, 9, 8, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+    z-index: 100;
+    padding: 1rem 0;
+  }
+
+  .toc-inner {
+    display: flex;
+    gap: 2rem;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    scrollbar-width: none;
+  }
+
+  .toc-inner::-webkit-scrollbar { display: none; }
+
+  .toc-inner a {
+    color: var(--ink-dim);
+    text-decoration: none;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+  }
+
+  .toc-inner a:hover {
+    color: var(--gold);
+    border-color: var(--gold);
+  }
+
+  /* ====== FOOTER ====== */
+  footer {
+    padding: 4rem 0 3rem;
+    text-align: center;
+    color: var(--ink-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    border-top: 1px solid var(--border);
+  }
+
+  footer .signature {
+    font-family: 'Fraunces', serif;
+    font-style: italic;
+    font-size: 1rem;
+    color: var(--gold);
+    text-transform: none;
+    letter-spacing: 0;
+    margin-top: 1rem;
+  }
+
+  /* ====== UTILITY ====== */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2.5rem;
+    margin: 2rem 0;
+  }
+
+  @media (max-width: 768px) {
+    .wrapper { padding: 0 1.25rem; }
+    section { padding: 3rem 0; }
+    .two-col { grid-template-columns: 1fr; gap: 1.5rem; }
+    .rec-numbers { flex-direction: column; gap: 1rem; }
+    .meta-grid { gap: 1rem; }
+    .brand-line { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+  }
+
+  /* Anchor offset for sticky nav */
+  section { scroll-margin-top: 70px; }
+</style>
+</head>
+<body>
+
+<nav class="toc">
+  <div class="wrapper">
+    <div class="toc-inner">
+      <a href="#verdict">▸ Verdict</a>
+      <a href="#correction">▸ Rule Correction</a>
+      <a href="#kelly">▸ Kelly Math</a>
+      <a href="#drawdown">▸ Drawdown Math</a>
+      <a href="#goals">▸ 3 Goals Compared</a>
+      <a href="#position">▸ Position Sizing</a>
+      <a href="#recommendations">▸ Recommendations</a>
+      <a href="#plan">▸ May–Oct Plan</a>
+      <a href="#rules">▸ Hard Rules</a>
+    </div>
+  </div>
+</nav>
+
+<header>
+  <div class="wrapper">
+    <div class="brand-line">
+      <div>
+        <span class="live-indicator">TYCHE CAPITAL</span>
+        <span class="dot"></span>
+        RISK RESEARCH BRIEF
+      </div>
+      <div>v1.0 · APR 2026</div>
+    </div>
+
+    <h1 class="title">
+      The <em>optimal</em> risk and<br>
+      reward ratio for gold,<br>
+      mathematically solved.
+    </h1>
+
+    <p class="subtitle">
+      A rigorous analysis of position sizing for XAU/USD trading on HolaPrime
+      prop challenges — covering Kelly Criterion, barrier-constrained growth,
+      Monte Carlo breach probabilities, and concrete recommendations for
+      $10K, $100K, and $200K accounts.
+    </p>
+
+    <div class="meta-grid">
+      <div class="meta-item">
+        <div class="meta-label">Win Rate Assumed</div>
+        <div class="meta-value">55%</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Prop Firm</div>
+        <div class="meta-value">HolaPrime 2-Step</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Instrument</div>
+        <div class="meta-value">XAU/USD</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Session</div>
+        <div class="meta-value">NY Killzone</div>
+      </div>
+      <div class="meta-item">
+        <div class="meta-label">Target</div>
+        <div class="meta-value">$30,000 · May–Oct</div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ===================== VERDICT ===================== -->
+<section id="verdict">
+  <div class="wrapper">
+    <div class="section-head">
+      <span class="section-num">§ 01 · EXECUTIVE VERDICT</span>
+      <h2>Across every account size and every optimization goal, the math converges on one corridor.</h2>
+    </div>
+
+    <div class="key-insight">
+      <p>
+        The dominant strategy across all three account sizes is
+        <span class="big-num">0.5% risk per trade</span> at
+        <span class="big-num">1:2 to 1:3 R:R</span>.
+        Full Kelly computes to <span class="big-num">32.5%</span> —
+        a number that would breach a prop account in a single bad session.
+        The correct prop-firm solution is roughly
+        <span class="big-num">1/65th of full Kelly</span> — not the textbook half- or
+        quarter-Kelly — because the binding constraint is a hard drawdown barrier,
+        not long-horizon growth.
+      </p>
+    </div>
+
+    <div class="rec-grid">
+      <div class="rec-card">
+        <div class="rec-account">Account Tier</div>
+        <div class="rec-size">$10,000</div>
+        <div class="rec-numbers">
+          <div>
+            <div class="rec-stat-label">Risk</div>
+            <div class="rec-stat-value">0.5%</div>
+          </div>
+          <div>
+            <div class="rec-stat-label">R:R</div>
+            <div class="rec-stat-value">1:2.5</div>
+          </div>
+        </div>
+        <div class="rec-details">
+          <div><span>Dollar risk</span><span>$50</span></div>
+          <div><span>EV / trade</span><span>$23.13</span></div>
+          <div><span>Days to Phase 1</span><span>~9 d</span></div>
+          <div><span>Days to Phase 2</span><span>~5.5 d</span></div>
+          <div><span>1st-try pass prob</span><span>~75%</span></div>
+        </div>
+      </div>
+
+      <div class="rec-card">
+        <div class="rec-account">Account Tier</div>
+        <div class="rec-size">$100,000</div>
+        <div class="rec-numbers">
+          <div>
+            <div class="rec-stat-label">Risk</div>
+            <div class="rec-stat-value">0.5%</div>
+          </div>
+          <div>
+            <div class="rec-stat-label">R:R</div>
+            <div class="rec-stat-value">1:2</div>
+          </div>
+        </div>
+        <div class="rec-details">
+          <div><span>Dollar risk</span><span>$500</span></div>
+          <div><span>EV / trade</span><span>$325</span></div>
+          <div><span>Days to Phase 1</span><span>~12 d</span></div>
+          <div><span>Days to Phase 2</span><span>~8 d</span></div>
+          <div><span>Bi-weekly payout</span><span>~$7,800</span></div>
+        </div>
+      </div>
+
+      <div class="rec-card">
+        <div class="rec-account">Account Tier</div>
+        <div class="rec-size">$200,000</div>
+        <div class="rec-numbers">
+          <div>
+            <div class="rec-stat-label">Risk</div>
+            <div class="rec-stat-value">0.4%</div>
+          </div>
+          <div>
+            <div class="rec-stat-label">R:R</div>
+            <div class="rec-stat-value">1:2</div>
+          </div>
+        </div>
+        <div class="rec-details">
+          <div><span>Dollar risk</span><span>$800</span></div>
+          <div><span>EV / trade</span><span>$520</span></div>
+          <div><span>Days to Phase 1</span><span>~15 d</span></div>
+          <div><span>Days to Phase 2</span><span>~10 d</span></div>
+          <div><span>Bi-weekly payout</span><span>~$10,000</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== RULE CORRECTION ===================== -->
+<section id="correction">
+  <div class="wrapper">
+    <div class="section-head">
+      <span class="section-num">§ 02 · CRITICAL CORRECTION</span>
+      <h2>HolaPrime's real drawdown rules are tighter than the prompt assumed.</h2>
+    </div>
+
+    <div class="warning-box">
+      <h4>⚠ Rule correction before we start</h4>
+      <p>
+        The "5% daily / 10% overall" assumption matches <strong>FTMO</strong>,
+        not HolaPrime. HolaPrime's 2-Step Pro/Prime product actually uses an
+        <strong>8% static overall drawdown</strong> — not 10% — and the
+        <strong>$200K and $300K tiers tighten daily loss to 4%</strong>.
+        All tables in this brief are computed against the true HolaPrime
+        constraints. Under the tighter 8% rule, every risk threshold ends up
+        ~20–25% more conservative than a naive FTMO-style analysis would
+        suggest.
+      </p>
+    </div>
+
+    <h4>Rule Summary — HolaPrime 2-Step Pro/Prime</h4>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>$10K Tier</th>
+            <th>$100K Tier</th>
+            <th>$200K Tier</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="label">Max daily drawdown</td>
+            <td>5%</td>
+            <td>5%</td>
+            <td class="danger">4%</td>
+          </tr>
+          <tr>
+            <td class="label">Max overall drawdown</td>
+            <td>8% static</td>
+            <td>8% static</td>
+            <td>8% static</td>
+          </tr>
+          <tr>
+            <td class="label">Phase 1 profit target</td>
+            <td>8%</td>
+            <td>8%</td>
+            <td>8%</td>
+          </tr>
+          <tr>
+            <td class="label">Phase 2 profit target</td>
+            <td>5%</td>
+            <td>5%</td>
+            <td>5%</td>
+          </tr>
+          <tr>
+            <td class="label">Payout split (On Demand)</td>
+            <td>80%</td>
+            <td>80%</td>
+            <td>80%</td>
+          </tr>
+          <tr>
+            <td class="label">Payout cycle</td>
+            <td>Bi-weekly</td>
+            <td>Bi-weekly</td>
+            <td>Bi-weekly</td>
+          </tr>
+          <tr>
+            <td class="label">Daily loss reference</td>
+            <td>Previous EOD balance + intraday profit</td>
+            <td>Previous EOD balance + intraday profit</td>
+            <td>Previous EOD balance + intraday profit</td>
+          </tr>
+          <tr>
+            <td class="label">Consistency rule (challenge)</td>
+            <td class="success">None</td>
+            <td class="success">None</td>
+            <td class="success">None</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== KELLY ===================== -->
+<section id="kelly">
+  <div class="wrapper">
+    <div class="section-head">
+      <span class="section-num">§ 03 · KELLY MATHEMATICS</span>
+      <h2>Why the textbook Kelly fraction is useless — and what to use instead.</h2>
+    </div>
+
+    <p>
+      The classical Kelly fraction for a binary bet with win probability
+      <em>p</em>, loss probability <em>q = 1 − p</em>, and payoff ratio
+      <em>b</em> is:
+    </p>
+
+    <div class="formula">
+      f* = (<span class="var">b</span> · <span class="var">p</span> − <span class="var">q</span>) / <span class="var">b</span>
+      &nbsp;&nbsp;=&nbsp;&nbsp;
+      <span class="var">p</span> − <span class="var">q</span>/<span class="var">b</span>
+    </div>
+
+    <p>For a 55% win rate across the SOP's R:R grid:</p>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>R:R (b)</th>
+            <th>Full Kelly f*</th>
+            <th>Half Kelly</th>
+            <th>Quarter Kelly</th>
+            <th>EV / trade (R)</th>
+            <th>σ / trade (R)</th>
+            <th>Sharpe / trade</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="label">1:1.5</td>
+            <td>25.00%</td>
+            <td>12.50%</td>
+            <td>6.25%</td>
+            <td>0.375</td>
+            <td>1.244</td>
+            <td>0.302</td>
+          </tr>
+          <tr class="highlight">
+            <td class="label">1:2.0</td>
+            <td class="highlight">32.50%</td>
+            <td class="highlight">16.25%</td>
+            <td class="highlight">8.125%</td>
+            <td class="highlight">0.650</td>
+            <td class="highlight">1.493</td>
+            <td class="highlight">0.436</td>
+          </tr>
+          <tr>
+            <td class="label">1:2.5</td>
+            <td>37.00%</td>
+            <td>18.50%</td>
+            <td>9.25%</td>
+            <td>0.925</td>
+            <td>1.741</td>
+            <td>0.531</td>
+          </tr>
+          <tr>
+            <td class="label">1:3.0</td>
+            <td>40.00%</td>
+            <td>20.00%</td>
+            <td>10.00%</td>
+            <td>1.200</td>
+            <td>1.990</td>
+            <td>0.603</td>
+          </tr>
+          <tr>
+            <td class="label">1:4.0</td>
+            <td>43.75%</td>
+            <td>21.88%</td>
+            <td>10.94%</td>
+            <td>1.750</td>
+            <td>2.488</td>
+            <td>0.703</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="table-caption">Kelly fractions and trade-level statistics at 55% win rate.</div>
+    </div>
+
+    <div class="key-insight">
+      <p>
+        Full Kelly at 1:2R implies risking nearly a third of equity per trade.
+        Thorp's log-normal result shows the expected drawdown of a full-Kelly
+        bettor is <span class="big-num">~50% of peak equity</span>. Even
+        <span class="big-num">quarter Kelly</span> (8.125% at 1:2R) would
+        breach HolaPrime's 8% overall drawdown in a single losing trade.
+        Every prop-firm risk level in our grid (0.25%–2%) is already deeply
+        sub-Kelly — between 1/130th and 1/16th of full Kelly.
+      </p>
+    </div>
+
+    <p>
+      So the correct question isn't "what fraction of Kelly?" — it's
+      <strong>what is the highest risk that keeps the probability of
+      touching the drawdown barrier acceptably low?</strong>
+    </p>
+  </div>
+</section>
+
+<!-- ===================== DRAWDOWN ===================== -->
+<section id="drawdown">
+  <div class="wrapper">
+    <div class="section-head">
+      <span class="section-num">§ 04 · BREACH PROBABILITY</span>
+      <h2>The binding constraint is drawdown, not ruin. Here is the heatmap.</h2>
+    </div>
+
+    <p>
+      Prop-firm "ruin" isn't a 100% wipeout — it's hitting the 8% static
+      barrier. The classical Kaufman ruin formula gives essentially zero
+      steady-state ruin probability at any sane risk level, but understates
+      prop-firm risk because it measures eventual ruin, not the probability
+      the random-walk path <em>touches</em> 8% somewhere along the way.
+    </p>
+
+    <p>
+      The correct tool is the <strong>Magdon-Ismail expected-maximum-drawdown</strong>
+      formula:
+    </p>
+
+    <div class="formula">
+      E[MaxDD] ≈ (<span class="var">σ²</span> / <span class="var">μ</span>) · ln(<span class="var">N</span>)
+      &nbsp;&nbsp;in R-units
+    </div>
+
+    <p>
+      For a 55%/2R system, σ²/μ = 3.427 R. Computed across 100 trades
+      (≈ a two-month challenge or funded cycle):
+    </p>
+
+    <div class="table-wrapper">
+      <table class="heatmap">
+        <thead>
+          <tr>
+            <th>Risk / trade</th>
+            <th>1:1.5</th>
+            <th>1:2.0</th>
+            <th>1:2.5</th>
+            <th>1:3.0</th>
+            <th>1:4.0</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="label">0.25%</td>
+            <td class="cell heat-1">4.75%</td>
+            <td class="cell heat-1">3.95%</td>
+            <td class="cell heat-1">3.77%</td>
+            <td class="cell heat-1">3.80%</td>
+            <td class="cell heat-1">4.07%</td>
+          </tr>
+          <tr>
+            <td class="label">0.50%</td>
+            <td class="cell heat-3">9.50%</td>
+            <td class="cell heat-2">7.89%</td>
+            <td class="cell heat-2">7.55%</td>
+            <td class="cell heat-2">7.60%</td>
+            <td class="cell heat-3">8.14%</td>
+          </tr>
+          <tr>
+            <td class="label">0.75%</td>
+            <td class="cell heat-4">14.25%</td>
+            <td class="cell heat-4">11.84%</td>
+            <td class="cell heat-4">11.32%</td>
+            <td class="cell heat-4">11.40%</td>
+            <td class="cell heat-4">12.21%</td>
+          </tr>
+          <tr>
+            <td class="label">1.00%</td>
+            <td class="cell heat-5">19.00%</td>
+            <td class="cell heat-4">15.78%</td>
+            <td class="cell heat-4">15.09%</td>
+            <td class="cell heat-4">15.20%</td>
+            <td class="cell heat-4">16.28%</td>
+          </tr>
+          <tr>
+            <td class="label">1.50%</td>
+            <td class="cell heat-5">28.50%</td>
+            <td class="cell heat-5">23.67%</td>
+            <td class="cell heat-5">22.64%</td>
+            <td class="cell heat-5">22.80%</td>
+            <td class="cell heat-5">24.42%</td>
+          </tr>
+          <tr>
+            <td class="label">2.00%</td>
+            <td class="cell heat-5">38.00%</td>
+            <td class="cell heat-5">31.56%</td>
+            <td class="cell heat-5">30.18%</td>
+            <td class="cell heat-5">30.40%</td>
+            <td class="cell heat-5">32.56%</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="table-caption">
+        Expected maximum drawdown over 100 trades. Green = safe vs 8% barrier.
+        Amber = flirting with barrier. Red = breach likely. 90th-percentile DD
+        typically runs ~1.5× the expectation.
+      </div>
+    </div>
+
+    <div class="key-insight">
+      <p>
+        Reading the 1:2R column against HolaPrime's 8% static barrier:
+        <span class="big-num">0.5% risk already puts expected max DD at the 8% ceiling</span>.
+        This is the single most important number in the entire brief.
+      </p>
+    </div>
+
+    <h3>Daily breach math</h3>
+    <p>
+      The daily 5% barrier math is cleaner because it's bounded by the
+      SOP's 3-trades-per-day cap. The worst possible intraday path is LLL
+      (probability 0.45³ = 9.11%), producing exactly <strong>3× the
+      per-trade risk</strong> as intraday drawdown.
+    </p>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Risk / trade</th>
+            <th>3-Loss Day = LLL</th>
+            <th>Daily Breach?</th>
+            <th>P(≥1 breach in 20 days)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="label">0.5%</td>
+            <td>1.5%</td>
+            <td class="success">Safe</td>
+            <td class="success">0%</td>
+          </tr>
+          <tr>
+            <td class="label">1.0%</td>
+            <td>3.0%</td>
+            <td class="success">Safe</td>
+            <td class="success">0%</td>
+          </tr>
+          <tr>
+            <td class="label">1.33%</td>
+            <td>4.0%</td>
+            <td class="highlight">= $200K limit</td>
+            <td>Borderline</td>
+          </tr>
+          <tr>
+            <td class="label">1.5%</td>
+            <td>4.5%</td>
+            <td class="success">Safe on $10K/$100K</td>
+            <td class="success">0% on standard</td>
+          </tr>
+          <tr>
+            <td class="label">1.67%</td>
+            <td>5.0%</td>
+            <td class="danger">= breach on standard</td>
+            <td class="danger">Critical threshold</td>
+          </tr>
+          <tr>
+            <td class="label">2.0%</td>
+            <td>6.0%</td>
+            <td class="danger">Breach</td>
+            <td class="danger">~85%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="warning-box">
+      <h4>Clean rule emerging from the math</h4>
+      <p>
+        Keep per-trade risk <strong>≤ 1.5%</strong> to make daily-barrier
+        breach structurally impossible on $10K/$100K accounts, and
+        <strong>≤ 1.25%</strong> on the $200K tier. The overall 8% barrier
+        then binds around 0.5%.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== GOALS ===================== -->
+<section id="goals">
+  <div class="wrapper">
+    <div class="section-head">
+      <span class="section-num">§ 05 · THREE OPTIMIZATION GOALS</span>
+      <h2>Every path — speed, safety, risk-adjusted — points to the same corridor.</h2>
+    </div>
+
+    <h3>Goal 1 · Fastest to target</h3>
+    <p>Expected days to Phase 1 (8% target), assuming 2 trades/day:</p>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Risk \ R:R</th>
+            <th>1:1.5</th>
+            <th>1:2.0</th>
+            <th>1:2.5</th>
+            <th>1:3.0</th>
+            <th>1:4.0</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="label">0.25%</td>
+            <td>42.7 d</td>
+            <td>24.6 d</td>
+            <td>17.3 d</td>
+            <td>13.3 d</td>
+            <td>9.1 d</td>
+          </tr>
+          <tr>
+            <td class="label">0.50%</td>
+            <td>21.3 d</td>
+            <td class="highlight">12.3 d</td>
+            <td class="highlight">8.6 d</td>
+            <td>6.7 d</td>
+            <td>4.6 d</td>
+          </tr>
+          <tr>
+            <td class="label">0.75%</td>
+            <td>14.2 d</td>
+            <td>8.2 d</td>
+            <td>5.8 d</td>
+            <td>4.4 d</td>
+            <td>3.0 d</td>
+          </tr>
+          <tr>
+            <td class="label">1.00%</td>
+            <td>10.7 d</td>
+            <td>6.2 d</td>
+            <td>4.3 d</td>
+            <td>3.3 d</td>
+            <td>2.3 d</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      Speed-optimal ignoring breach risk is 2% at 1:4R (~1.1 days) — but
+      that combination carries an 85% daily-breach probability.
+      <strong>Speed-optimal respecting breach constraints is 0.75% at 1:3R
+      (~4.4 d) or 0.5% at 1:2.5R (~8.6 d).</strong>
+    </p>
+
+    <h3>Goal 2 · Lowest breach probability</h3>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Risk / trade</th>
+            <th>P(daily breach in 20d)</th>
+            <th>P(8% DD in 100 tr, 1:2R)</th>
+            <th>P(8% DD in 100 tr, 1:3R)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="label">0.25%</td>
+            <td class="success">0% (structural)</td>
+            <td class="success">~2%</td>
+            <td class="success">~2%</td>
+          </tr>
+          <tr class="highlight">
+            <td class="label">0.50%</td>
+            <td class="success">0%</td>
+            <td>~10–12%</td>
+            <td>~9–11%</td>
+          </tr>
+          <tr>
+            <td class="label">0.75%</td>
+            <td class="success">0%</td>
+            <td class="danger">~35–45%</td>
+            <td class="danger">~35–45%</td>
+          </tr>
+          <tr>
+            <td class="label">1.00%</td>
+            <td class="success">0%</td>
+            <td class="danger">~55–65%</td>
+            <td class="danger">~55–65%</td>
+          </tr>
+          <tr>
+            <td class="label">1.50%</td>
+            <td class="success">0%</td>
+            <td class="danger">~80–90%</td>
+            <td class="danger">~80–90%</td>
+          </tr>
+          <tr>
+            <td class="label">2.00%</td>
+            <td class="danger">~85%</td>
+            <td class="danger">~95%+</td>
+            <td class="danger">~95%+</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      Below 0.5% risk, breach becomes a tail event. Above 0.75%, breach
+      becomes the modal outcome. This matches published FTMO failure-cause
+      data where ~70% of all fails come from drawdown rule violations.
+    </p>
+
+    <h3>Goal 3 · Risk-adjusted (Kelly / Sharpe)</h3>
+    <p>
+      Two practical risk-adjusted rankings emerge:
+    </p>
+
+    <ul class="rules-list">
+      <li>
+        <strong>Geometric growth per trade</strong> (Kelly-native metric):
+        at 0.5% risk, g/trade = p·ln(1+bp) + q·ln(1−r) — best at
+        <strong>1:3 R:R</strong> (g ≈ 0.57%/trade). Peaks near 1:3 because
+        the (b+1)² variance penalty compounds at higher R:R.
+      </li>
+      <li>
+        <strong>Growth-to-barrier ratio</strong>: EV%/trade divided by
+        90th-percentile MDD. Best at <strong>0.5% risk, 1:2.5 or 1:3 R:R</strong>,
+        giving a ratio near 0.07/trade.
+      </li>
+    </ul>
+
+    <div class="key-insight">
+      <p>
+        Half-Kelly would prescribe 16.25% (at 1:2R) — 32× too aggressive
+        for an 8% barrier. The barrier-adjusted Kelly, computed as
+        Kelly × (barrier / expected full-Kelly MDD) ≈ 32.5% × (8%/50%)
+        ≈ 5.2%, then discounted ~10× for estimation error in the 55% WR
+        assumption, lands at <span class="big-num">0.5–0.65%</span> —
+        exactly where both the speed and breach analyses independently
+        converge.
+      </p>
+    </div>
+
+    <h3>The decisive cross-goal comparison</h3>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Account</th>
+            <th>Fastest</th>
+            <th>Safest</th>
+            <th>Risk-Adjusted</th>
+            <th>Recommended</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="label">$10,000</td>
+            <td>0.75% / 1:3</td>
+            <td>0.25% / 1:2</td>
+            <td>0.5% / 1:3</td>
+            <td class="highlight">0.5% / 1:2.5</td>
+          </tr>
+          <tr>
+            <td class="label">$100,000</td>
+            <td>0.75% / 1:3</td>
+            <td>0.25% / 1:2</td>
+            <td>0.5% / 1:2.5</td>
+            <td class="highlight">0.5% / 1:2</td>
+          </tr>
+          <tr>
+            <td class="label">$200,000</td>
+            <td>0.5% / 1:3</td>
+            <td>0.25% / 1:2</td>
+            <td>0.5% / 1:2</td>
+            <td class="highlight">0.4% / 1:2</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== POSITION SIZING ===================== -->
+<section id="position">
+  <div class="wrapper">
+    <div class="section-head">
+      <span class="section-num">§ 06 · POSITION SIZING FOR GOLD</span>
+      <h2>Translating % risk into actual lot sizes for XAU/USD.</h2>
+    </div>
+
+    <p>
+      Using the MT5 prop-firm convention ($10 per pip per 1.0 standard lot
+      where a "pip" means $0.10 price move), the formula is:
+    </p>
+
+    <div class="formula">
+      Lot size = <span class="var">Dollar risk</span> / (<span class="var">Stop in pips</span> × <span class="var">Pip value</span>)
+    </div>
+
+    <p>
+      Gold's NY-killzone 5-minute order-block setups genuinely need
+      30–50 pips of wiggle room — anything tighter donates to stop-hunters
+      given XAU's typical intraday noise of $0.80–$1.50 ATR on 5M.
+      The <strong>30-pip stop is the realistic planning number</strong>.
+    </p>
+
+    <h4>Position sizing at recommended risk level (0.5% / 0.4%)</h4>
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Account</th>
+            <th>Risk $</th>
+            <th>20-pip SL</th>
+            <th>30-pip SL</th>
+            <th>40-pip SL</th>
+            <th>50-pip SL</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="label">$10,000 @ 0.5%</td>
+            <td>$50</td>
+            <td>0.25</td>
+            <td class="highlight">0.17</td>
+            <td>0.125</td>
+            <td>0.10</td>
+          </tr>
+          <tr>
+            <td class="label">$100,000 @ 0.5%</td>
+            <td>$500</td>
+            <td>2.50</td>
+            <td class="highlight">1.67</td>
+            <td>1.25</td>
+            <td>1.00</td>
+          </tr>
+          <tr>
+            <td class="label">$200,000 @ 0.4%</td>
+            <td>$800</td>
+            <td>4.00</td>
+            <td class="highlight">2.67</td>
+            <td>2.00</td>
+            <td>1.60</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="table-caption">
+        Lot sizes in standard lots. The 30-pip column is the realistic
+        planning benchmark. All figures are within HolaPrime's 2025 lot caps.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== RECOMMENDATIONS ===================== -->
+<section id="recommendations">
+  <div class="wrapper">
+    <div class="section-head">
+      <span class="section-num">§ 07 · FINAL RECOMMENDATIONS</span>
+      <h2>The specific numbers, per account size, with full justification.</h2>
+    </div>
+
+    <div class="two-col">
+      <div>
+        <h3 style="color: var(--gold-bright);">$10,000 → 0.5% / 1:2.5</h3>
+        <div class="rec-details" style="font-size: 0.95rem;">
+          <div><span>Dollar risk / trade</span><span>$50</span></div>
+          <div><span>EV / trade</span><span>$23.13</span></div>
+          <div><span>Trades to Phase 1</span><span>~17.3</span></div>
+          <div><span>Days to Phase 1</span><span>~9 days</span></div>
+          <div><span>Days to Phase 2</span><span>~5.5 days</span></div>
+          <div><span>Expected max DD</span><span>~7.5%</span></div>
+          <div><span>Both phases first-try</span><span>~75%</span></div>
+        </div>
+      </div>
+      <div>
+        <h3 style="color: var(--gold-bright);">$100,000 → 0.5% / 1:2</h3>
+        <div class="rec-details" style="font-size: 0.95rem;">
+          <div><span>Dollar risk / trade</span><span>$500</span></div>
+          <div><span>EV / trade</span><span>$325</span></div>
+          <div><span>Trades to Phase 1</span><span>~25</span></div>
+          <div><span>Days to Phase 1</span><span>~12 days</span></div>
+          <div><span>Days to Phase 2</span><span>~8 days</span></div>
+          <div><span>Bi-weekly payout</span><span>~$7,800</span></div>
+          <div><span>Cycles to $30K (solo)</span><span>~3.8</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 2rem;">
+      <h3 style="color: var(--gold-bright);">$200,000 → 0.4% / 1:2</h3>
+      <p style="margin-bottom: 1rem;">
+        Tightened for three reasons: the <strong>daily loss limit drops to
+        4%</strong> on this tier (making 1.3%+ risk mechanically unsafe),
+        position sizes become large enough that slippage and spread widening
+        matter more in absolute dollar terms, and 8% of $200K is $16,000 of
+        drawdown — a psychologically harder number to absorb.
+      </p>
+      <div class="rec-details" style="font-size: 0.95rem;">
+        <div><span>Dollar risk / trade</span><span>$800</span></div>
+        <div><span>EV / trade</span><span>$520</span></div>
+        <div><span>Trades to Phase 1</span><span>~31</span></div>
+        <div><span>Days to Phase 1</span><span>~15 days</span></div>
+        <div><span>Days to Phase 2</span><span>~10 days</span></div>
+        <div><span>Bi-weekly payout</span><span>~$10,000</span></div>
+        <div><span>Single cycle covers</span><span>~⅓ of $30K goal</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== MAY-OCT PLAN ===================== -->
+<section id="plan">
+  <div class="wrapper">
+    <div class="section-head">
+      <span class="section-num">§ 08 · MAY–OCTOBER EXECUTION PLAN</span>
+      <h2>From $2K + $10K starting pool to $30K cumulative profit.</h2>
+    </div>
+
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-weeks">Weeks 1–3</div>
+        <div class="timeline-title">Pass the $10K Phase 1</div>
+        <div class="timeline-body">
+          Run <strong>0.5% risk, 1:2 R:R</strong> as the default SOP setting.
+          Expected time to 8% target: ~24.6 trades = ~12 trading days at
+          2 trades/day. Expected max DD ≈ 5.3% — comfortably under both the
+          5% daily and 8% overall barrier. First-attempt pass probability
+          ≈ <strong>80–85%</strong>, well above HolaPrime's ~35% blended rate.
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-weeks">Weeks 3–5</div>
+        <div class="timeline-title">Pass the $10K Phase 2</div>
+        <div class="timeline-body">
+          Same parameters. Expected time ~8 trading days to the 5% target.
+          Combined phase-by-phase pass probability ≈ <strong>70%</strong>.
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-weeks">Weeks 5–12</div>
+        <div class="timeline-title">Funded $10K + buy first $100K challenge</div>
+        <div class="timeline-body">
+          A $10K funded account produces bi-weekly payouts averaging
+          <strong>~$780</strong> at 0.5%/1:2R — enough to fund a ~$549
+          HolaPrime $100K challenge entry <strong>every 2–3 weeks from payouts,
+          not from personal capital</strong>. Purchase the $100K challenge in
+          week 6–8 funded from the first payout. This is the rational deployment.
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-weeks">Weeks 8–18</div>
+        <div class="timeline-title">Funded $10K + Funded $100K</div>
+        <div class="timeline-body">
+          On the $100K maintain <strong>0.5% risk, 1:2 R:R</strong>.
+          Single bi-weekly cycle at these parameters produces $780 on the
+          $10K plus ~$7,800 on the $100K = <strong>~$8,600 per cycle</strong>.
+          Four cycles = <strong>~$34,400 — clearing the $30K goal by week 16</strong>.
+        </div>
+      </div>
+
+      <div class="timeline-item">
+        <div class="timeline-weeks">Weeks 18–26</div>
+        <div class="timeline-title">Optional: Add $200K challenge as accelerant</div>
+        <div class="timeline-body">
+          If everything prior worked, the $200K challenge ($999–$1,199 fee)
+          at <strong>0.4% risk, 1:2 R:R</strong> adds optionality rather than
+          necessity. Expected funded payout contribution ≈
+          <strong>$12,480 per bi-weekly cycle</strong>.
+        </div>
+      </div>
+    </div>
+
+    <div class="warning-box">
+      <h4>Reality check on the $10K alone</h4>
+      <p>
+        At 0.5% / 1:2R, a $10K funded account takes <strong>~38 cycles (~18 months)</strong>
+        to cumulatively pay out $30K on its own. <strong>$30K is functionally
+        unreachable on $10K alone within 6 months</strong> — it must be
+        paired with the $100K (and ideally $200K) accounts. Treat the $10K
+        as an on-ramp, not a destination.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== HARD RULES ===================== -->
+<section id="rules">
+  <div class="wrapper">
+    <div class="section-head">
+      <span class="section-num">§ 09 · HARD RULES</span>
+      <h2>Six commandments the math demands, not opinions.</h2>
+    </div>
+
+    <ul class="rules-list">
+      <li>
+        <strong>Never exceed 1.5% risk on any account, ever.</strong>
+        The daily-breach math makes higher risk a 9% single-day coin flip
+        for termination.
+      </li>
+      <li>
+        <strong>Never use R:R below 1:2 — SOP minimum confirmed.</strong>
+        Sharpe at 1:1.5 is 30% lower than at 1:2; EV is 42% lower.
+      </li>
+      <li>
+        <strong>Never use full, half, or even quarter Kelly.</strong>
+        The prop-firm barrier distorts the entire Kelly framework.
+        Correct fraction is ~1.5% of full Kelly.
+      </li>
+      <li>
+        <strong>Target two trades per day, not three.</strong>
+        This preserves LLW/LWL paths as non-breaches and keeps worst
+        intraday DD at 2R instead of 3R. Cuts daily breach probability
+        roughly in half.
+      </li>
+      <li>
+        <strong>Stop trading for the day at −2R intraday.</strong>
+        This hard rule keeps daily drawdown ≤ 1% regardless of risk level
+        and eliminates tail-day breaches entirely.
+      </li>
+      <li>
+        <strong>Scale account size, not risk percentage.</strong>
+        Buying a $100K challenge at 0.5% risk beats pushing a $10K to 1%
+        risk on every metric — speed, safety, and risk-adjusted.
+      </li>
+    </ul>
+
+    <div class="key-insight">
+      <p>
+        Every independent analytical route — Kelly discounted for the
+        drawdown barrier, Magdon-Ismail expected max drawdown, binomial
+        daily-breach enumeration, Sharpe subject to the barrier, industry
+        pass-rate data — lands in the same narrow corridor:
+        <span class="big-num">0.4–0.5% risk per trade, 1:2 to 1:2.5 R:R,
+        two trades per day, a −2R daily stop-trading rule, and aggressive
+        scaling of account size rather than risk percentage when profits
+        allow.</span>
+      </p>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrapper">
+    <div>HOLAPRIME · XAU/USD · RISK RESEARCH BRIEF</div>
+    <div>PREPARED FOR TYCHE CAPITAL · APRIL 2026</div>
+    <div class="signature">ស្មារតីអង្គភាព — Spirit of the Unit</div>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,5 +1,5 @@
 /**
- * forms.js — Slide-in form panel primitives shared by account/strategy/backtest forms.
+ * forms.js — Slide-in form panel primitives shared by account/strategy/journal forms.
  */
 
 import { el } from './utils.js';

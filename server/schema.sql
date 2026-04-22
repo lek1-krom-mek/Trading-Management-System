@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS strategies (
   updated_at     INTEGER NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS backtests (
+CREATE TABLE IF NOT EXISTS journals (
   id               TEXT PRIMARY KEY,
   strategy_id      TEXT,
   account_id       TEXT,
@@ -47,6 +47,6 @@ CREATE TABLE IF NOT EXISTS backtests (
   FOREIGN KEY (account_id)  REFERENCES accounts(id)   ON DELETE SET NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_backtests_strategy ON backtests(strategy_id);
-CREATE INDEX IF NOT EXISTS idx_backtests_account  ON backtests(account_id);
-CREATE INDEX IF NOT EXISTS idx_backtests_created  ON backtests(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_journals_strategy ON journals(strategy_id);
+CREATE INDEX IF NOT EXISTS idx_journals_account  ON journals(account_id);
+CREATE INDEX IF NOT EXISTS idx_journals_created  ON journals(created_at DESC);

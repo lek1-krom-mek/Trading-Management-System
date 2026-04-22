@@ -8,7 +8,7 @@ import { db, uid } from './db.js';
 export const data = {
   accounts:   [],
   strategies: [],
-  backtests:  [],
+  journals:  [],
   activeAccountId: null,
 };
 
@@ -20,11 +20,11 @@ export async function loadAll() {
   const [a, s, b] = await Promise.all([
     db.getAll('accounts'),
     db.getAll('strategies'),
-    db.getAll('backtests'),
+    db.getAll('journals'),
   ]);
   data.accounts   = a.sort((x,y) => (y.createdAt||0) - (x.createdAt||0));
   data.strategies = s.sort((x,y) => (y.createdAt||0) - (x.createdAt||0));
-  data.backtests  = b.sort((x,y) => (y.createdAt||0) - (x.createdAt||0));
+  data.journals  = b.sort((x,y) => (y.createdAt||0) - (x.createdAt||0));
   data.activeAccountId = localStorage.getItem('tms-active-account') || (data.accounts[0]?.id || null);
   notify('all');
 }
@@ -47,8 +47,8 @@ export async function saveAccount(obj) {
 export async function deleteAccount(id) {
   await db.del('accounts', id);
   data.accounts = data.accounts.filter(x => x.id !== id);
-  // Unlink from strategies' implicit usage and from backtests
-  data.backtests.forEach(b => { if (b.accountId === id) b.accountId = null; });
+  // Unlink from strategies' implicit usage and from journals
+  data.journals.forEach(b => { if (b.accountId === id) b.accountId = null; });
   if (data.activeAccountId === id) setActiveAccount(data.accounts[0]?.id || null);
   notify('accounts');
 }
@@ -74,18 +74,18 @@ export async function deleteStrategy(id) {
   notify('strategies');
 }
 
-export async function saveBacktest(obj) {
+export async function savejournal(obj) {
   if (!obj.id) obj.id = uid();
-  await db.put('backtests', obj);
-  const i = data.backtests.findIndex(x => x.id === obj.id);
-  if (i >= 0) data.backtests[i] = obj; else data.backtests.unshift(obj);
-  notify('backtests');
+  await db.put('journals', obj);
+  const i = data.journals.findIndex(x => x.id === obj.id);
+  if (i >= 0) data.journals[i] = obj; else data.journals.unshift(obj);
+  notify('journals');
   return obj;
 }
-export async function deleteBacktest(id) {
-  await db.del('backtests', id);
-  data.backtests = data.backtests.filter(x => x.id !== id);
-  notify('backtests');
+export async function deletejournal(id) {
+  await db.del('journals', id);
+  data.journals = data.journals.filter(x => x.id !== id);
+  notify('journals');
 }
 
 // ── Derived helpers ──────────────────────────────────────
@@ -94,7 +94,7 @@ export function strategyById(id)  { return data.strategies.find(s => s.id === id
 export function activeAccount()   { return accountById(data.activeAccountId); }
 
 export function strategyStats(strategyId) {
-  const bt = data.backtests.filter(b => b.strategyId === strategyId);
+  const bt = data.journals.filter(b => b.strategyId === strategyId);
   const wins = bt.filter(b => b.result === 'win').length;
   const losses = bt.filter(b => b.result === 'loss').length;
   const be = bt.filter(b => b.result === 'be').length;
