@@ -6,7 +6,7 @@ import { data, saveAccount, deleteAccount, strategyById, setActiveAccount } from
 import { openFormPanel, field, textInput, numberInput, select, multiChips, toggleGroup, readForm } from './forms.js';
 import { el, ACCOUNT_TYPES, ACCOUNT_STATUSES, initials, fmtMoney, fmtPct, iconSVG, toast, sparkline } from './utils.js';
 import { go } from './router.js';
-import { openJournalForm } from './journal.js';
+import { openJournalForm, openJournalDetail } from './journal.js';
 
 export function renderAccountsPage() {
   const root = document.querySelector('[data-page="accounts"]');
@@ -362,7 +362,7 @@ export function renderAccountDetail(id) {
       const amtLabel = amt
         ? (t.result === 'loss' ? '-' : t.result === 'win' ? '+' : '') + fmtMoney(amt, { dp: 0 })
         : (t.rAchieved ? t.rAchieved + 'R' : '');
-      grid.appendChild(el('div', { class: 'bt-thumb', onClick: () => openJournalForm(t), style: t.screenshotPath ? { backgroundImage: `url(${t.screenshotPath})` } : {} },
+      grid.appendChild(el('div', { class: 'bt-thumb', onClick: () => openJournalDetail(t), style: t.screenshotPath ? { backgroundImage: `url(${t.screenshotPath})` } : {} },
         el('div', { class: 'bt-thumb-label' },
           el('span', { class: 'bt-result ' + (t.result || 'be') }, (t.result || 'be').toUpperCase()),
           el('span', {}, amtLabel)

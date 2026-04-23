@@ -170,6 +170,7 @@ export function iconSVG(name) {
     check:     '<path d="M5 12l5 5L20 7" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>',
     sparkle:   '<path d="M12 2l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/>',
     filter:    '<path d="M3 5h18M6 12h12M10 19h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>',
+    menu:      '<path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>',
   };
   return `<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${icons[name] || ''}</svg>`;
 }

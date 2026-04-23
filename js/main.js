@@ -74,6 +74,12 @@ function updateAddButton() {
   label.textContent = map[route.name] || 'Add New';
 }
 
+function closeMobileSidebar() {
+  document.getElementById('app-sidebar')?.classList.remove('open');
+  document.getElementById('sidebar-backdrop')?.classList.remove('open');
+  document.getElementById('mobile-menu-btn')?.setAttribute('aria-expanded', 'false');
+}
+
 function onAddClick() {
   const route = current() || { name: 'dashboard' };
   switch (route.name) {
@@ -198,11 +204,21 @@ async function boot() {
 
   // Wire the sidebar/nav/theme buttons
   document.querySelectorAll('.nav-item').forEach(btn =>
-    btn.addEventListener('click', () => go(btn.dataset.nav))
+    btn.addEventListener('click', () => { go(btn.dataset.nav); closeMobileSidebar(); })
   );
-  document.getElementById('sidebar-add').addEventListener('click', onAddClick);
+  document.getElementById('sidebar-add').addEventListener('click', () => { onAddClick(); closeMobileSidebar(); });
   document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
-  document.getElementById('sidebar-account').addEventListener('click', () => go('accounts'));
+  document.getElementById('sidebar-account').addEventListener('click', () => { go('accounts'); closeMobileSidebar(); });
+
+  // Mobile sidebar toggle
+  const menuBtn = document.getElementById('mobile-menu-btn');
+  const backdrop = document.getElementById('sidebar-backdrop');
+  menuBtn?.addEventListener('click', () => {
+    const isOpen = document.getElementById('app-sidebar').classList.toggle('open');
+    backdrop?.classList.toggle('open', isOpen);
+    menuBtn.setAttribute('aria-expanded', String(isOpen));
+  });
+  backdrop?.addEventListener('click', closeMobileSidebar);
 
   // One-time cleanup for pre-fix visitors who got duplicate seed rows
   if (!localStorage.getItem('tms-seed-v2')) {
