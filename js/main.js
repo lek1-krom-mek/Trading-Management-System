@@ -15,6 +15,7 @@ import { renderDashboardPage }           from './dashboard.js';
 import { renderAccountsPage, renderAccountDetail, openAccountForm } from './accounts.js';
 import { renderStrategiesPage, renderStrategyDetail, openStrategyForm } from './strategies.js';
 import { renderJournalPage, openJournalForm } from './journal.js';
+import { renderCalendarPage } from './calendar.js';
 import { el, fmtMoney, fmtPct, ACCOUNT_TYPES, initials } from './utils.js';
 import { db, uid } from './db.js';
 
@@ -28,6 +29,7 @@ register('dashboard',   renderDashboardPage);
 register('accounts',    (param) => param ? renderAccountDetail(param) : renderAccountsPage());
 register('strategies',  (param) => param ? renderStrategyDetail(param) : renderStrategiesPage());
 register('journal',     renderJournalPage);
+register('calendar',    renderCalendarPage);
 register('calculator',  () => { renderCalcMeta(); });
 
 function renderCalcMeta() {
@@ -69,6 +71,7 @@ function updateAddButton() {
     accounts:  'Add Account',
     strategies:'Add Strategy',
     journal:   'Add Journal',
+    calendar:  'Add Journal',
     calculator: 'Add Account',
   };
   label.textContent = map[route.name] || 'Add New';
@@ -86,6 +89,7 @@ function onAddClick() {
     case 'accounts':    openAccountForm();   break;
     case 'strategies':  openStrategyForm();  break;
     case 'journal':     openJournalForm();   break;
+    case 'calendar':    openJournalForm();   break;
     case 'calculator':
     case 'dashboard':
     default:            openAccountForm();   break;
@@ -130,6 +134,32 @@ function syncCalcWithActiveAccount() {
   restoreControls();
   render();
   renderCalcMeta();
+}
+
+// Reconstruct startingCapital for accounts that were saved without one.
+// Runs every boot; only touches accounts where startingCapital <= 0.
+// startingCapital = currentCapital - sum(journal deltas for this account)
+async function backfillStartingCapital() {
+  try {
+    const accs = await db.getAll('accounts');
+    const journals = await db.getAll('journals');
+    const deltaFor = (id) => journals
+      .filter(j => j.accountId === id)
+      .reduce((sum, j) => {
+        const amt = Math.abs(parseFloat(j.amount) || 0);
+        if (j.result === 'win')  return sum + amt;
+        if (j.result === 'loss') return sum - amt;
+        return sum;
+      }, 0);
+    for (const a of accs) {
+      const starting = parseFloat(a.startingCapital) || 0;
+      const capital = parseFloat(a.capital) || 0;
+      if (starting > 0 || capital <= 0) continue;
+      const reconstructed = capital - deltaFor(a.id);
+      const fixed = reconstructed > 0 ? reconstructed : capital;
+      await db.put('accounts', { ...a, startingCapital: fixed });
+    }
+  } catch {}
 }
 
 // ── One-time cleanup migration ──────────────────────────
@@ -232,6 +262,7 @@ async function boot() {
 
   await loadAll();
   await cleanupSeededSamples();
+  await backfillStartingCapital();
   await loadAll();
   if (!localStorage.getItem('tms-seeded') && !data.accounts.length && !data.strategies.length && !data.journals.length) {
     await seedIfEmpty();
@@ -250,6 +281,7 @@ async function boot() {
       accounts:  () => r.param ? renderAccountDetail(r.param) : renderAccountsPage(),
       strategies: () => r.param ? renderStrategyDetail(r.param) : renderStrategiesPage(),
       journal:   renderJournalPage,
+      calendar:  renderCalendarPage,
       calculator: renderCalcMeta,
     };
     routes[r.name]?.();

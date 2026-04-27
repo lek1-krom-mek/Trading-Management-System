@@ -1,15 +1,22 @@
 CREATE TABLE IF NOT EXISTS accounts (
-  id            TEXT PRIMARY KEY,
-  name          TEXT NOT NULL,
-  type          TEXT NOT NULL,
-  company       TEXT,
-  capital       REAL,
-  status        TEXT,
-  rules         TEXT,           -- JSON object
-  strategy_ids  TEXT,           -- JSON array of strategy ids
-  ea_name       TEXT,
-  created_at    INTEGER NOT NULL,
-  updated_at    INTEGER NOT NULL
+  id               TEXT PRIMARY KEY,
+  name             TEXT NOT NULL,
+  type             TEXT NOT NULL,
+  company          TEXT,
+  account_number   TEXT,
+  capital          REAL,
+  starting_capital REAL,
+  status           TEXT,
+  tier             TEXT,
+  phase            TEXT,
+  risk_appetite    TEXT,
+  rules            TEXT,           -- JSON object
+  strategy_ids     TEXT,           -- JSON array of strategy ids
+  ea_name          TEXT,
+  broker           TEXT,
+  vps              TEXT,
+  created_at       INTEGER NOT NULL,
+  updated_at       INTEGER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS strategies (

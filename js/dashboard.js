@@ -8,6 +8,7 @@ import { go } from './router.js';
 import { openAccountForm } from './accounts.js';
 import { openStrategyForm } from './strategies.js';
 import { openJournalForm, openJournalDetail } from './journal.js';
+import { dashboardMiniCalendar } from './calendar.js';
 import { emptyState } from './accounts.js';
 
 const dashFilters = { journalAccount: 'all' };
@@ -74,6 +75,9 @@ export function renderDashboardPage() {
 
   // ── Journal trade history ──
   root.appendChild(journalHistorySection());
+
+  // ── Mini PnL calendar (current month) ──
+  root.appendChild(dashboardMiniCalendar(dashFilters.journalAccount));
 }
 
 function kpi(v, l, tone) {

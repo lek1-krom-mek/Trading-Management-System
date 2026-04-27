@@ -52,6 +52,24 @@ try {
   console.warn('[migrate] journals.amount:', err.message);
 }
 
+try {
+  const cols = db.prepare('PRAGMA table_info(accounts)').all().map(c => c.name);
+  const adds = [
+    ['starting_capital', 'REAL'],
+    ['account_number',   'TEXT'],
+    ['tier',             'TEXT'],
+    ['phase',            'TEXT'],
+    ['risk_appetite',    'TEXT'],
+    ['broker',           'TEXT'],
+    ['vps',              'TEXT'],
+  ];
+  for (const [name, type] of adds) {
+    if (!cols.includes(name)) db.exec(`ALTER TABLE accounts ADD COLUMN ${name} ${type}`);
+  }
+} catch (err) {
+  console.warn('[migrate] accounts columns:', err.message);
+}
+
 // ── Field mapping (snake_case DB ↔ camelCase JS) ─────────
 const MAPPERS = {
   accounts: {
@@ -60,11 +78,18 @@ const MAPPERS = {
       name: a.name,
       type: a.type,
       company: a.company ?? null,
+      account_number: a.accountNumber ?? null,
       capital: a.capital ?? null,
+      starting_capital: a.startingCapital ?? null,
       status: a.status ?? null,
+      tier: a.tier ?? null,
+      phase: a.phase ?? null,
+      risk_appetite: a.riskAppetite ?? null,
       rules: JSON.stringify(a.rules ?? {}),
       strategy_ids: JSON.stringify(a.strategyIds ?? []),
       ea_name: a.eaName ?? null,
+      broker: a.broker ?? null,
+      vps: a.vps ?? null,
       created_at: a.createdAt ?? Date.now(),
       updated_at: a.updatedAt ?? Date.now(),
     }),
@@ -73,11 +98,18 @@ const MAPPERS = {
       name: r.name,
       type: r.type,
       company: r.company,
+      accountNumber: r.account_number,
       capital: r.capital,
+      startingCapital: r.starting_capital,
       status: r.status,
+      tier: r.tier,
+      phase: r.phase,
+      riskAppetite: r.risk_appetite,
       rules: r.rules ? JSON.parse(r.rules) : {},
       strategyIds: r.strategy_ids ? JSON.parse(r.strategy_ids) : [],
       eaName: r.ea_name,
+      broker: r.broker,
+      vps: r.vps,
       createdAt: r.created_at,
       updatedAt: r.updated_at,
     }),

@@ -198,7 +198,7 @@ export function openAccountForm(existing = null) {
         type: raw.type,
         company: raw.company,
         accountNumber: raw.accountNumber,
-        startingCapital: parseFloat(raw.startingCapital) || 0,
+        startingCapital: parseFloat(raw.startingCapital) || parseFloat(raw.capital) || 0,
         capital: parseFloat(raw.capital || raw.startingCapital) || 0,
         status: raw.status,
         strategyIds: raw.strategyIds || [],
