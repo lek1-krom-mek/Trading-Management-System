@@ -78,6 +78,36 @@ export function renderDashboardPage() {
 
   // ── Mini PnL calendar (current month) ──
   root.appendChild(dashboardMiniCalendar(dashFilters.journalAccount));
+
+  // ── Doctrine links + copyright ──
+  root.appendChild(doctrineFooter());
+}
+
+function doctrineFooter() {
+  const wrap = el('section', { class: 'dash-doctrine' },
+    el('div', { class: 'doctrine-head' },
+      el('div', { class: 'doctrine-eyebrow' }, 'Tyche Capital · Doctrine'),
+      el('h2', { class: 'doctrine-title' }, 'The Manual & The Math')
+    ),
+    el('div', { class: 'doctrine-grid' },
+      el('a', { class: 'doctrine-card', href: 'blueprint.html', target: '_blank', rel: 'noopener' },
+        el('div', { class: 'doctrine-card-mark' }, 'Manual · 01'),
+        el('div', { class: 'doctrine-card-title' }, 'The Trading Manual'),
+        el('div', { class: 'doctrine-card-body' }, 'Foundation, technical mastery, and the eight rules of ស្មារតីអង្គភាព.'),
+        el('div', { class: 'doctrine-card-cta' }, 'Open blueprint →')
+      ),
+      el('a', { class: 'doctrine-card', href: 'gold_risk_analysis.html', target: '_blank', rel: 'noopener' },
+        el('div', { class: 'doctrine-card-mark' }, 'Brief · 02'),
+        el('div', { class: 'doctrine-card-title' }, 'Gold Risk & R:R Analysis'),
+        el('div', { class: 'doctrine-card-body' }, 'Optimal risk per trade for XAU/USD on HolaPrime — Kelly, drawdown, and execution plan.'),
+        el('div', { class: 'doctrine-card-cta' }, 'Open brief →')
+      )
+    ),
+    el('div', { class: 'doctrine-copy' },
+      `© ${new Date().getFullYear()} Chhaynee Seak · Tyche Capital — Trading Management System`
+    )
+  );
+  return wrap;
 }
 
 function kpi(v, l, tone) {
