@@ -14,7 +14,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 
 const ROOT        = path.join(__dirname, '..');
-const DB_PATH     = path.join(ROOT, 'tms.db');
+const DB_PATH     = process.env.TMS_DB_PATH || path.join(ROOT, 'tms.db');
 const UPLOADS_DIR = path.join(ROOT, 'uploads');
 const SCHEMA_PATH = path.join(__dirname, 'schema.sql');
 
@@ -277,9 +277,13 @@ app.use((err, _req, res, _next) => {
   res.status(500).json({ error: err.message || 'Server error' });
 });
 
-const PORT = Number(process.env.PORT) || 3000;
-app.listen(PORT, () => {
-  console.log(`TMS server → http://localhost:${PORT}`);
-  console.log(`Database   → ${DB_PATH}`);
-  console.log(`Uploads    → ${UPLOADS_DIR}`);
-});
+if (require.main === module) {
+  const PORT = Number(process.env.PORT) || 3000;
+  app.listen(PORT, () => {
+    console.log(`TMS server → http://localhost:${PORT}`);
+    console.log(`Database   → ${DB_PATH}`);
+    console.log(`Uploads    → ${UPLOADS_DIR}`);
+  });
+}
+
+module.exports = { app, db };
