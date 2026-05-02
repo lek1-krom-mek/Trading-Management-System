@@ -49,6 +49,10 @@ CREATE TABLE IF NOT EXISTS journals (
   screenshot_path  TEXT,        -- e.g. /uploads/bt-xxx.png
   description      TEXT,
   tags             TEXT,        -- JSON array
+  sop_checks       TEXT,        -- JSON: { rule_1: { confirmed, note }, ... }
+  grade            TEXT,        -- 'A' | 'B' | 'C' | 'Off-SOP' | NULL (legacy)
+  confluence_count INTEGER,     -- 0–8 confirmed rules; NULL for legacy
+  pre_grading      INTEGER NOT NULL DEFAULT 0,  -- 1 if logged before SOP rollout
   created_at       INTEGER NOT NULL,
   updated_at       INTEGER NOT NULL,
   FOREIGN KEY (strategy_id) REFERENCES strategies(id) ON DELETE SET NULL,

@@ -61,6 +61,14 @@ try {
     backfill();
   }
   if (!cols.includes('plan_id')) db.exec('ALTER TABLE journals ADD COLUMN plan_id TEXT');
+  if (!cols.includes('sop_checks'))       db.exec('ALTER TABLE journals ADD COLUMN sop_checks TEXT');
+  if (!cols.includes('grade'))            db.exec('ALTER TABLE journals ADD COLUMN grade TEXT');
+  if (!cols.includes('confluence_count')) db.exec('ALTER TABLE journals ADD COLUMN confluence_count INTEGER');
+  if (!cols.includes('pre_grading')) {
+    db.exec('ALTER TABLE journals ADD COLUMN pre_grading INTEGER NOT NULL DEFAULT 0');
+    const r = db.prepare('UPDATE journals SET pre_grading = 1 WHERE sop_checks IS NULL').run();
+    if (r.changes > 0) console.log(`[migrate] flagged ${r.changes} journal entries as pre-grading`);
+  }
 } catch (err) {
   console.warn('[migrate] journals columns:', err.message);
 }
