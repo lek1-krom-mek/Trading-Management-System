@@ -7,8 +7,9 @@ import { data, savejournal, deletejournal, strategyById, accountById, saveAccoun
 import { openFormPanel, field, textInput, numberInput, textArea, select, toggleGroup, imageUpload, multiChips, readForm } from './forms.js';
 import { el, INSTRUMENTS, TIMEFRAMES, iconSVG, toast, fmtDate, fmtRelative } from './utils.js';
 import { emptyState } from './accounts.js';
+import { sopChecklistField, gradeClass } from './sop-checklist.js';
 
-let filters = { strategy: 'all', account: 'all', result: 'all', instrument: 'all' };
+let filters = { strategy: 'all', account: 'all', result: 'all', instrument: 'all', grade: 'all' };
 
 // Signed P&L delta a journal entry contributes to its account.
 function signedDelta(result, amount) {
@@ -215,6 +216,8 @@ export function openJournalForm(existing = null, defaults = {}) {
     });
   });
 
+  const sopField = sopChecklistField({ name: 'sopChecks', value: b.sopChecks || null });
+
   const body = el('div', {},
     isDisciplineViolation
       ? el('div', { class: 'discipline-warning-banner' },
@@ -226,6 +229,8 @@ export function openJournalForm(existing = null, defaults = {}) {
       ? multiChips({ name: 'strategyIds', values: initialStrategyIds, options: stratOpts })
       : el('div', { class: 'form-empty-note' }, 'Create a strategy first.'),
       'Tap one or more strategies that contributed to this trade.'),
+    sectionHeader('SOP CHECKLIST'),
+    sopField,
     field('Account', select({ name: 'accountId', value: b.accountId || '', options: acctOpts })),
     row(
       field('Instrument', select({ name: 'instrument', value: b.instrument || 'XAU/USD', options: INSTRUMENTS.map(i => ({ value: i, label: i })) })),
@@ -255,7 +260,11 @@ export function openJournalForm(existing = null, defaults = {}) {
       toast('Journal entry deleted');
     } : null,
     onSubmit: async (form) => {
-      const raw = readForm(form, ['tags', 'strategyIds']);
+      if (!sopField.isFullyTouched()) {
+        toast('Review all 8 SOP rules before saving.');
+        throw new Error('sop-not-touched');
+      }
+      const raw = readForm(form, ['tags', 'strategyIds'], ['sopChecks']);
 
       const oldResult = existing ? existing.result : null;
       const oldAmount = existing ? existing.amount : 0;
@@ -282,6 +291,7 @@ export function openJournalForm(existing = null, defaults = {}) {
         screenshotPath: raw.screenshotPath || b.screenshotPath || '',
         description: raw.description,
         tags: raw.tags || [],
+        sopChecks: raw.sopChecks || sopField.getState(),
       };
       const savedJournal = await savejournal(obj);
 
