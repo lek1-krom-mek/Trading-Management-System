@@ -158,6 +158,27 @@ function validateSopChecks(sopChecks) {
   return { ok: true };
 }
 
+function computeCapState({ dailyPnlToday, startingCapital, personalDailyCapPct, firmDailyCapPct }) {
+  const balance = Number(startingCapital) || 0;
+  const personalPct = Number(personalDailyCapPct) || 3.0;
+  const firmPct     = Number(firmDailyCapPct)     || 5.0;
+  const pnl = Number(dailyPnlToday) || 0;
+
+  const personalCapDollars = -(balance * personalPct / 100);
+  const firmCapDollars     = -(balance * firmPct / 100);
+  const personalCapPctUsed = balance > 0 && pnl < 0 ? Math.abs(pnl / personalCapDollars * 100) : 0;
+  const firmCapPctUsed     = balance > 0 && pnl < 0 ? Math.abs(pnl / firmCapDollars * 100)     : 0;
+
+  let capState = 'safe';
+  if (firmCapPctUsed >= 100)            capState = 'firm_breached';
+  else if (personalCapPctUsed >= 100)   capState = 'personal_breached';
+  else if (personalCapPctUsed >= 90)    capState = 'breach_imminent';
+  else if (personalCapPctUsed >= 70)    capState = 'warning';
+  else if (personalCapPctUsed >= 40)    capState = 'caution';
+
+  return { dailyPnlToday: pnl, personalCapDollars, firmCapDollars, personalCapPctUsed, firmCapPctUsed, capState };
+}
+
 const MAPPERS = {
   accounts: {
     toDb: a => ({
@@ -499,4 +520,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { app, db };
+module.exports = { app, db, computeCapState };
