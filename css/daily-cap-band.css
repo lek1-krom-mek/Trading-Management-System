@@ -1,0 +1,108 @@
+/* Daily cap band — single-row card on dashboard */
+.daily-cap-band {
+  display: grid;
+  gap: 8px;
+  padding: 14px 18px;
+  margin: 12px 0 18px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.dcb-head {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+.dcb-eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.5);
+}
+.dcb-account {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.dcb-summary {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.dcb-bar {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  gap: 12px;
+  align-items: center;
+}
+.dcb-bar-track {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+.dcb-bar-fill {
+  height: 100%;
+  background: currentColor;
+  transition: width 240ms ease;
+}
+.dcb-bar-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  letter-spacing: 0.04em;
+}
+
+.dcb-message {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: 4px;
+}
+
+/* State variants — color the border + fill */
+.daily-cap-band--caution {
+  border-color: rgba(245, 158, 11, 0.25);
+  color: #FBBF24;
+}
+.daily-cap-band--warning {
+  border-color: rgba(249, 115, 22, 0.4);
+  background: rgba(249, 115, 22, 0.06);
+  color: #FB923C;
+}
+.daily-cap-band--breach-imminent {
+  border-color: rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.07);
+  color: #F87171;
+  animation: dcb-pulse 2s ease-in-out infinite;
+}
+.daily-cap-band--personal-breached {
+  border-color: rgba(239, 68, 68, 0.75);
+  background: rgba(239, 68, 68, 0.18);
+  color: #FCA5A5;
+}
+.daily-cap-band--firm-breached {
+  border: 2px double rgba(239, 68, 68, 0.85);
+  background: rgba(239, 68, 68, 0.25);
+  color: #FCA5A5;
+}
+
+@keyframes dcb-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  50%      { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.18); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .daily-cap-band--breach-imminent { animation: none; }
+}
+
+/* Inline daily-used indicator on Risk Calculator */
+.m-daily-used {
+  font-size: 11px;
+  font-weight: 500;
+  margin-left: 4px;
+}
+.m-daily-used--neutral { color: rgba(255, 255, 255, 0.55); }
+.m-daily-used--caution { color: #FBBF24; }
+.m-daily-used--warning { color: #FB923C; }
+.m-daily-used--breach  { color: #F87171; }

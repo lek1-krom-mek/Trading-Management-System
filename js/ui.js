@@ -9,6 +9,7 @@
 
 import { state, saveState } from './state.js';
 import { calculate }        from './calc.js';
+import { data }              from './store.js';
 
 // ── Helpers ───────────────────────────────────────────────
 
@@ -70,7 +71,20 @@ export function render() {
   el('m-daily').textContent        = '$' + r.dailyLimit.toFixed(0);
   el('m-max').textContent          = '$' + r.maxLoss.toFixed(0);
   el('m-target').textContent       = '$' + r.target.toFixed(0);
-  el('m-daily-label').textContent  = `Daily limit (${state.dailyPct}%)`;
+  const dailyLabelEl = el('m-daily-label');
+  dailyLabelEl.textContent = `Daily limit (${state.dailyPct}%)`;
+  const activeAcc = data.accounts.find(a => a.id === data.activeAccountId);
+  if (activeAcc && typeof activeAcc.personalCapPctUsed === 'number') {
+    const pct = Math.round(activeAcc.personalCapPctUsed);
+    const tone = activeAcc.capState === 'safe' ? 'neutral'
+               : activeAcc.capState === 'caution' ? 'caution'
+               : activeAcc.capState === 'warning' ? 'warning'
+               : 'breach';
+    const span = document.createElement('span');
+    span.className = `m-daily-used m-daily-used--${tone}`;
+    span.textContent = ` · today: ${pct}% used`;
+    dailyLabelEl.appendChild(span);
+  }
   el('m-max-label').textContent    = `Max loss (${state.maxlossPct}%)`;
   el('m-target-label').textContent = `Target (${state.targetPct}%)`;
 

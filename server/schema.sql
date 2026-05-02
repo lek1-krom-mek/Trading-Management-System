@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS accounts (
   ea_name          TEXT,
   broker           TEXT,
   vps              TEXT,
+  personal_daily_cap_pct REAL NOT NULL DEFAULT 3.0,
+  firm_daily_cap_pct     REAL NOT NULL DEFAULT 5.0,
   created_at       INTEGER NOT NULL,
   updated_at       INTEGER NOT NULL
 );

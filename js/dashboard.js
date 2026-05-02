@@ -5,6 +5,7 @@
 import { data, strategyStats, setActiveAccount, journalStrategyIds, journalHasStrategy } from './store.js';
 import { el, ACCOUNT_TYPES, ACCOUNT_STATUSES, initials, fmtMoney, fmtPct, fmtDate, fmtRelative, iconSVG, sparkline, equityCurve } from './utils.js';
 import { winRateByGrade, disciplineViolations, skipRatio } from './discipline.js';
+import { dailyCapBand } from './daily-cap-band.js';
 import { go } from './router.js';
 import { openAccountForm } from './accounts.js';
 import { openStrategyForm } from './strategies.js';
@@ -35,6 +36,10 @@ export function renderDashboardPage() {
       kpi(fmtMoney(totalCapital(), { dp: 0 }), 'Total prifit', 'gold')
     )
   ));
+
+  // ── Daily cap band — hidden when active account is in safe state ──
+  const band = dailyCapBand(active);
+  if (band) root.appendChild(band);
 
   // ── Account strip ──
   const accSection = el('section', { class: 'dash-section' },

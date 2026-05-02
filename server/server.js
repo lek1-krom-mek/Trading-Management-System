@@ -87,6 +87,14 @@ try {
   for (const [name, type] of adds) {
     if (!cols.includes(name)) db.exec(`ALTER TABLE accounts ADD COLUMN ${name} ${type}`);
   }
+  if (!cols.includes('personal_daily_cap_pct')) {
+    db.exec('ALTER TABLE accounts ADD COLUMN personal_daily_cap_pct REAL');
+    db.prepare('UPDATE accounts SET personal_daily_cap_pct = 3.0 WHERE personal_daily_cap_pct IS NULL').run();
+  }
+  if (!cols.includes('firm_daily_cap_pct')) {
+    db.exec('ALTER TABLE accounts ADD COLUMN firm_daily_cap_pct REAL');
+    db.prepare('UPDATE accounts SET firm_daily_cap_pct = 5.0 WHERE firm_daily_cap_pct IS NULL').run();
+  }
 } catch (err) {
   console.warn('[migrate] accounts columns:', err.message);
 }
@@ -150,6 +158,66 @@ function validateSopChecks(sopChecks) {
   return { ok: true };
 }
 
+function computeCapState({ dailyPnlToday, startingCapital, personalDailyCapPct, firmDailyCapPct }) {
+  const balance = Number(startingCapital) || 0;
+  const personalPct = Number(personalDailyCapPct) || 3.0;
+  const firmPct     = Number(firmDailyCapPct)     || 5.0;
+  const pnl = Number(dailyPnlToday) || 0;
+
+  const personalCapDollars = -(balance * personalPct / 100);
+  const firmCapDollars     = -(balance * firmPct / 100);
+  const personalCapPctUsed = balance > 0 && pnl < 0 ? Math.abs(pnl / personalCapDollars * 100) : 0;
+  const firmCapPctUsed     = balance > 0 && pnl < 0 ? Math.abs(pnl / firmCapDollars * 100)     : 0;
+
+  let capState = 'safe';
+  if (firmCapPctUsed >= 100)            capState = 'firm_breached';
+  else if (personalCapPctUsed >= 100)   capState = 'personal_breached';
+  else if (personalCapPctUsed >= 90)    capState = 'breach_imminent';
+  else if (personalCapPctUsed >= 70)    capState = 'warning';
+  else if (personalCapPctUsed >= 40)    capState = 'caution';
+
+  return { dailyPnlToday: pnl, personalCapDollars, firmCapDollars, personalCapPctUsed, firmCapPctUsed, capState };
+}
+
+const TRADER_TZ_OFFSET_MINUTES = 420;  // GMT+7 (Cambodia)
+
+function todayBoundsMs(now = Date.now()) {
+  const localNow = now + TRADER_TZ_OFFSET_MINUTES * 60_000;
+  const dayMs = 24 * 60 * 60 * 1000;
+  const startLocal = Math.floor(localNow / dayMs) * dayMs;
+  const endLocal = startLocal + dayMs;
+  return {
+    startUtcMs: startLocal - TRADER_TZ_OFFSET_MINUTES * 60_000,
+    endUtcMs:   endLocal   - TRADER_TZ_OFFSET_MINUTES * 60_000,
+  };
+}
+
+function dailyPnlForAccount(accountId) {
+  if (!accountId) return 0;
+  const { startUtcMs, endUtcMs } = todayBoundsMs();
+  const row = db.prepare(`
+    SELECT COALESCE(SUM(CASE
+      WHEN result = 'win'  THEN amount
+      WHEN result = 'loss' THEN -amount
+      ELSE 0
+    END), 0) AS pnl
+    FROM journals
+    WHERE account_id = ? AND entry_date >= ? AND entry_date < ?
+  `).get(accountId, startUtcMs, endUtcMs);
+  return row.pnl || 0;
+}
+
+function enrichAccount(account) {
+  const pnl = dailyPnlForAccount(account.id);
+  const cap = computeCapState({
+    dailyPnlToday: pnl,
+    startingCapital: account.startingCapital ?? account.capital,
+    personalDailyCapPct: account.personalDailyCapPct,
+    firmDailyCapPct: account.firmDailyCapPct,
+  });
+  return { ...account, ...cap };
+}
+
 const MAPPERS = {
   accounts: {
     toDb: a => ({
@@ -169,6 +237,8 @@ const MAPPERS = {
       ea_name: a.eaName ?? null,
       broker: a.broker ?? null,
       vps: a.vps ?? null,
+      personal_daily_cap_pct: a.personalDailyCapPct ?? 3.0,
+      firm_daily_cap_pct: a.firmDailyCapPct ?? 5.0,
       created_at: a.createdAt ?? Date.now(),
       updated_at: a.updatedAt ?? Date.now(),
     }),
@@ -189,6 +259,8 @@ const MAPPERS = {
       eaName: r.ea_name,
       broker: r.broker,
       vps: r.vps,
+      personalDailyCapPct: r.personal_daily_cap_pct ?? 3.0,
+      firmDailyCapPct: r.firm_daily_cap_pct ?? 5.0,
       createdAt: r.created_at,
       updatedAt: r.updated_at,
     }),
@@ -407,7 +479,9 @@ app.get('/api/:store', (req, res) => {
   }
 
   const rows = db.prepare(`SELECT * FROM ${store} ORDER BY created_at DESC`).all();
-  res.json(rows.map(MAPPERS[store].fromDb));
+  const mapped = rows.map(MAPPERS[store].fromDb);
+  if (store === 'accounts') return res.json(mapped.map(enrichAccount));
+  res.json(mapped);
 });
 
 app.get('/api/:store/:id', (req, res) => {
@@ -415,7 +489,9 @@ app.get('/api/:store/:id', (req, res) => {
   if (!isStore(store)) return res.status(404).json({ error: 'Unknown store' });
   const row = db.prepare(`SELECT * FROM ${store} WHERE id = ?`).get(id);
   if (!row) return res.status(404).json({ error: 'Not found' });
-  res.json(MAPPERS[store].fromDb(row));
+  const mapped = MAPPERS[store].fromDb(row);
+  if (store === 'accounts') return res.json(enrichAccount(mapped));
+  res.json(mapped);
 });
 
 app.put('/api/:store', (req, res) => {
@@ -491,4 +567,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { app, db };
+module.exports = { app, db, computeCapState };
