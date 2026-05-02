@@ -1,0 +1,95 @@
+/* SOP checklist — 8-row field + live grade preview */
+.sop-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 8px 0 4px;
+}
+
+.sop-checklist-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sop-row {
+  display: grid;
+  grid-template-columns: auto 1fr minmax(140px, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 6px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  transition: border-color 160ms ease;
+}
+.sop-row:hover { border-color: rgba(245, 158, 11, 0.25); }
+
+.sop-row-cb-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.sop-row-cb { width: 16px; height: 16px; cursor: pointer; }
+
+.sop-row-label {
+  font-size: 13px;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.sop-row-note { font-size: 12px; padding: 6px 8px; }
+
+.sop-grade-preview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  font-size: 12px;
+}
+.sop-grade-label {
+  letter-spacing: 0.08em;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+}
+.sop-grade-count {
+  margin-left: auto;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Grade pill — reused on cards, detail meta, and live preview */
+.grade-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid transparent;
+}
+.grade-pill--a           { background: rgba(16, 185, 129, 0.18); color: #10B981; border-color: rgba(16,185,129,0.4); }
+.grade-pill--b           { background: rgba(245, 158, 11, 0.18); color: #FDE68A; border-color: rgba(245,158,11,0.4); }
+.grade-pill--c           { background: rgba(249, 115, 22, 0.18); color: #FDBA74; border-color: rgba(249,115,22,0.4); }
+.grade-pill--off-sop     { background: rgba(239, 68, 68, 0.20);  color: #FCA5A5; border-color: rgba(239,68,68,0.45); }
+.grade-pill--pre-grading { background: rgba(255,255,255,0.06);    color: rgba(255,255,255,0.55); border-color: rgba(255,255,255,0.12); }
+
+.bt-grade-badge {
+  position: absolute;
+  top: 10px;
+  right: 56px;
+  z-index: 2;
+  font-size: 10px;
+  padding: 2px 6px;
+}
+
+/* meta pill grade tinting in detail modal */
+.meta-pill.grade-a .meta-pill-v          { color: #10B981; }
+.meta-pill.grade-b .meta-pill-v          { color: #FDE68A; }
+.meta-pill.grade-c .meta-pill-v          { color: #FDBA74; }
+.meta-pill.grade-off-sop .meta-pill-v    { color: #FCA5A5; }
+.meta-pill.grade-pre-grading .meta-pill-v { color: rgba(255,255,255,0.6); }
