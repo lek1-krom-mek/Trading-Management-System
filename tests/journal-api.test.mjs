@@ -92,3 +92,26 @@ test('round-trip via GET returns sopChecks unchanged', async () => {
     assert.equal(r.body.confluenceCount, 4);
   } finally { cleanup(); }
 });
+
+test('?grade= filter returns only matching grades + Pre-grading', async () => {
+  const { app, cleanup } = startTestServer();
+  try {
+    await request(app, 'PUT', '/api/journals', { id: 'a',  sopChecks: fullSop([1,2,3,4,5,6,7,8]) });
+    await request(app, 'PUT', '/api/journals', { id: 'b',  sopChecks: fullSop([1,2,3,4,5]) });
+    await request(app, 'PUT', '/api/journals', { id: 'c',  sopChecks: fullSop([1,2,3]) });
+    await request(app, 'PUT', '/api/journals', { id: 'o',  sopChecks: fullSop([1]) });
+    await request(app, 'PUT', '/api/journals', { id: 'pg' });
+
+    const onlyA = await request(app, 'GET', '/api/journals?grade=A');
+    assert.deepEqual(onlyA.body.map(j => j.id).sort(), ['a']);
+
+    const aAndB = await request(app, 'GET', '/api/journals?grade=A,B');
+    assert.deepEqual(aAndB.body.map(j => j.id).sort(), ['a','b']);
+
+    const pgOnly = await request(app, 'GET', '/api/journals?grade=Pre-grading');
+    assert.deepEqual(pgOnly.body.map(j => j.id).sort(), ['pg']);
+
+    const cAndPg = await request(app, 'GET', '/api/journals?grade=C,Pre-grading');
+    assert.deepEqual(cAndPg.body.map(j => j.id).sort(), ['c','pg']);
+  } finally { cleanup(); }
+});

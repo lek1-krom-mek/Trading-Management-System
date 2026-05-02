@@ -389,6 +389,23 @@ const upload = multer({
 app.get('/api/:store', (req, res) => {
   const { store } = req.params;
   if (!isStore(store)) return res.status(404).json({ error: 'Unknown store' });
+
+  if (store === 'journals' && typeof req.query.grade === 'string' && req.query.grade.length) {
+    const wanted = req.query.grade.split(',').map(s => s.trim()).filter(Boolean);
+    const grades  = wanted.filter(g => g !== 'Pre-grading');
+    const wantsPg = wanted.includes('Pre-grading');
+    const clauses = [];
+    const params = [];
+    if (grades.length) {
+      clauses.push(`grade IN (${grades.map(() => '?').join(',')})`);
+      params.push(...grades);
+    }
+    if (wantsPg) clauses.push('pre_grading = 1');
+    const where = clauses.length ? `WHERE ${clauses.join(' OR ')}` : '';
+    const rows = db.prepare(`SELECT * FROM journals ${where} ORDER BY created_at DESC`).all(...params);
+    return res.json(rows.map(MAPPERS.journals.fromDb));
+  }
+
   const rows = db.prepare(`SELECT * FROM ${store} ORDER BY created_at DESC`).all();
   res.json(rows.map(MAPPERS[store].fromDb));
 });
