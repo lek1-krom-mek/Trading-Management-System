@@ -3,7 +3,7 @@
  * (File kept at journal.js to avoid churn; store is still `journals` in DB.)
  */
 
-import { data, savejournal, deletejournal, strategyById, accountById, saveAccount } from './store.js';
+import { data, savejournal, deletejournal, strategyById, accountById, saveAccount, journalStrategyIds, journalHasStrategy, executePlan } from './store.js';
 import { openFormPanel, field, textInput, numberInput, textArea, select, toggleGroup, imageUpload, multiChips, readForm } from './forms.js';
 import { el, INSTRUMENTS, TIMEFRAMES, iconSVG, toast, fmtDate, fmtRelative } from './utils.js';
 import { emptyState } from './accounts.js';
@@ -59,7 +59,7 @@ export function renderJournalPage() {
   root.appendChild(bar);
 
   const filtered = data.journals.filter(b =>
-    (filters.strategy === 'all'   || b.strategyId === filters.strategy) &&
+    (filters.strategy === 'all'   || journalHasStrategy(b, filters.strategy)) &&
     (filters.account === 'all'    || b.accountId === filters.account) &&
     (filters.result === 'all'     || b.result === filters.result) &&
     (filters.instrument === 'all' || b.instrument === filters.instrument)
@@ -92,8 +92,11 @@ function filterSelect(label, key, options) {
 }
 
 function journalCard(b) {
-  const s = strategyById(b.strategyId);
+  const strategies = journalStrategyIds(b).map(strategyById).filter(Boolean);
   const a = accountById(b.accountId);
+  const stratChips = strategies.length
+    ? strategies.map(s => el('span', { class: 'mini-chip', style: { background: s.color + '22', color: s.color, borderColor: s.color + '55' } }, s.name))
+    : [el('span', { class: 'mini-chip' }, 'No strategy')];
   return el('article', { class: 'bt-card', onClick: (e) => {
       if (e.target.closest('button')) return;
       openJournalDetail(b);
@@ -105,7 +108,7 @@ function journalCard(b) {
     ),
     el('div', { class: 'bt-card-body' },
       el('div', { class: 'bt-card-row' },
-        s ? el('span', { class: 'mini-chip', style: { background: s.color + '22', color: s.color, borderColor: s.color + '55' } }, s.name) : el('span', { class: 'mini-chip' }, 'No strategy'),
+        ...stratChips,
         el('span', { class: 'mini-chip tf' }, b.timeframe || '—'),
         el('span', { class: 'mini-chip inst' }, b.instrument || '—')
       ),
@@ -125,16 +128,20 @@ function journalCard(b) {
 }
 
 export function openJournalDetail(b) {
-  const s = strategyById(b.strategyId);
+  const strategies = journalStrategyIds(b).map(strategyById).filter(Boolean);
   const a = accountById(b.accountId);
+  const titleText = strategies.length ? strategies.map(s => s.name).join(' + ') : 'Untitled strategy';
   const overlay = el('div', { class: 'bt-detail-overlay' });
   const modal = el('div', { class: 'bt-detail-modal' },
     el('div', { class: 'bt-detail-header' },
       el('div', {},
-        el('div', { class: 'bt-detail-title' }, s?.name || 'Untitled strategy'),
+        el('div', { class: 'bt-detail-title' }, titleText),
         el('div', { class: 'bt-detail-sub' },
           `${b.instrument || '—'} · ${b.timeframe || '—'} · ${(b.direction || 'long').toUpperCase()} · ${fmtDate(b.entryDate || b.createdAt)}`
-        )
+        ),
+        strategies.length > 1 ? el('div', { class: 'chip-row', style: { marginTop: '8px' } },
+          ...strategies.map(s => el('span', { class: 'mini-chip', style: { background: s.color + '22', color: s.color, borderColor: s.color + '55' } }, s.name))
+        ) : null
       ),
       el('div', { class: 'bt-detail-actions' },
         el('button', { class: 'btn btn-ghost btn-sm', onClick: () => { close(); openJournalForm(b); } },
@@ -176,7 +183,11 @@ function metaPill(label, value, extra = '') {
 }
 
 export function openJournalForm(existing = null, defaults = {}) {
-  const b = existing || { result: 'win', direction: 'long', timeframe: 'H1', instrument: 'XAU/USD', tags: [], ...defaults };
+  const b = existing || { result: 'win', direction: 'long', timeframe: 'H1', instrument: 'XAU/USD', tags: [], strategyIds: [], ...defaults };
+  const planId = defaults.planId || (existing && existing.planId) || null;
+  const linkedPlan = planId ? data.plans.find(p => p.id === planId) : null;
+  const isDisciplineViolation = !!linkedPlan && linkedPlan.grade === 'SKIP';
+  const initialStrategyIds = journalStrategyIds(b);
   const stratOpts = data.strategies.map(s => ({ value: s.id, label: s.name }));
   const acctOpts = [{ value: '', label: '— Unassigned —' }, ...data.accounts.map(a => ({ value: a.id, label: a.name }))];
   const resultToggle = toggleGroup({ name: 'result', value: b.result || 'win', options: [
@@ -205,13 +216,17 @@ export function openJournalForm(existing = null, defaults = {}) {
   });
 
   const body = el('div', {},
+    isDisciplineViolation
+      ? el('div', { class: 'discipline-warning-banner' },
+          el('strong', {}, 'Discipline violation warning:'),
+          ' This plan failed must-pass checks. Logging it anyway will be recorded as a discipline violation.')
+      : null,
     field('Screenshot', imageUpload({ name: 'screenshotPath', value: b.screenshotPath || '' })),
-    row(
-      field('Strategy', stratOpts.length
-        ? select({ name: 'strategyId', value: b.strategyId || stratOpts[0]?.value, options: stratOpts, required: true })
-        : el('div', { class: 'form-empty-note' }, 'Create a strategy first.')),
-      field('Account', select({ name: 'accountId', value: b.accountId || '', options: acctOpts }))
-    ),
+    field('Strategies', stratOpts.length
+      ? multiChips({ name: 'strategyIds', values: initialStrategyIds, options: stratOpts })
+      : el('div', { class: 'form-empty-note' }, 'Create a strategy first.'),
+      'Tap one or more strategies that contributed to this trade.'),
+    field('Account', select({ name: 'accountId', value: b.accountId || '', options: acctOpts })),
     row(
       field('Instrument', select({ name: 'instrument', value: b.instrument || 'XAU/USD', options: INSTRUMENTS.map(i => ({ value: i, label: i })) })),
       field('Timeframe',  select({ name: 'timeframe',  value: b.timeframe || 'H1',      options: TIMEFRAMES.map(t => ({ value: t, label: t })) }))
@@ -240,7 +255,7 @@ export function openJournalForm(existing = null, defaults = {}) {
       toast('Journal entry deleted');
     } : null,
     onSubmit: async (form) => {
-      const raw = readForm(form, ['tags']);
+      const raw = readForm(form, ['tags', 'strategyIds']);
 
       const oldResult = existing ? existing.result : null;
       const oldAmount = existing ? existing.amount : 0;
@@ -249,10 +264,13 @@ export function openJournalForm(existing = null, defaults = {}) {
       const newResult = raw.result;
       const newAmount = Math.abs(parseFloat(raw.amount) || 0);
       const newAccountId = raw.accountId || null;
+      const newStrategyIds = Array.isArray(raw.strategyIds) ? raw.strategyIds.filter(Boolean) : [];
 
       const obj = {
         ...b,
-        strategyId: raw.strategyId,
+        planId: planId || b.planId || null,
+        strategyIds: newStrategyIds,
+        strategyId: newStrategyIds[0] || null,
         accountId: newAccountId,
         instrument: raw.instrument,
         timeframe: raw.timeframe,
@@ -265,7 +283,12 @@ export function openJournalForm(existing = null, defaults = {}) {
         description: raw.description,
         tags: raw.tags || [],
       };
-      await savejournal(obj);
+      const savedJournal = await savejournal(obj);
+
+      // If this journal was created from a plan, link plan→journal and flag discipline violation
+      if (planId && !existing) {
+        await executePlan(planId, savedJournal.id);
+      }
 
       // Reconcile account balance(s). Immutable updates via applyBalanceChange().
       const oldDelta = signedDelta(oldResult, oldAmount);

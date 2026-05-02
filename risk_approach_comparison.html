@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TMS</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500;600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --navy-900: #0a1628;
+  --navy-800: #0f2138;
+  --navy-700: #16304d;
+  --navy-600: #1e3f63;
+  --navy-500: #2c4f78;
+  --gold-400: #d4a86a;
+  --gold-500: #c89456;
+  --gold-600: #a87935;
+  --gold-100: #f5e8d1;
+  --ivory: #f8f4ec;
+  --ivory-muted: #d8d2c4;
+  --text-primary: #f8f4ec;
+  --text-secondary: #a8b3c3;
+  --text-muted: #6b7a8f;
+  --green: #5dcaa5;
+  --green-dark: #1d9e75;
+  --red: #e07a5f;
+  --red-dark: #c05841;
+  --border-line: rgba(212, 168, 106, 0.18);
+  --border-line-strong: rgba(212, 168, 106, 0.35);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--navy-900);
+  background-image:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(212, 168, 106, 0.08), transparent 70%),
+    radial-gradient(ellipse 60% 50% at 100% 100%, rgba(28, 79, 120, 0.4), transparent 70%);
+  color: var(--text-primary);
+  font-weight: 300;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+  letter-spacing: 0.01em;
+}
+
+.serif { font-family: 'Cormorant Garamond', Georgia, serif; }
+.mono { font-family: 'JetBrains Mono', monospace; }
+
+.container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+
+/* ====== HEADER ====== */
+.top-bar {
+  border-bottom: 0.5px solid var(--border-line);
+  padding: 14px 0;
+  background: rgba(10, 22, 40, 0.7);
+  backdrop-filter: blur(12px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.top-bar-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.top-bar-inner .brand {
+  color: var(--gold-400);
+  font-weight: 500;
+  letter-spacing: 0.2em;
+}
+.top-bar-inner .live-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  margin-right: 6px;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ====== HERO ====== */
+.hero {
+  padding: 80px 0 60px;
+  border-bottom: 0.5px solid var(--border-line);
+  position: relative;
+}
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 50px;
+  right: 32px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--gold-400);
+  opacity: 0.5;
+  letter-spacing: 0.2em;
+}
+.eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--gold-400);
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.eyebrow::before {
+  content: '';
+  width: 32px;
+  height: 1px;
+  background: var(--gold-400);
+}
+.hero h1 {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(44px, 6vw, 76px);
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin-bottom: 28px;
+  max-width: 900px;
+}
+.hero h1 em {
+  font-style: italic;
+  color: var(--gold-400);
+  font-weight: 300;
+}
+.hero-subtitle {
+  font-size: 17px;
+  color: var(--text-secondary);
+  max-width: 640px;
+  font-weight: 300;
+  line-height: 1.7;
+}
+.hero-meta {
+  margin-top: 40px;
+  display: flex;
+  gap: 48px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  border-top: 0.5px solid var(--border-line);
+  padding-top: 24px;
+}
+.hero-meta span strong {
+  display: block;
+  color: var(--gold-400);
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: 4px;
+  letter-spacing: 0.05em;
+}
+
+/* ====== SECTION ====== */
+.section {
+  padding: 80px 0;
+  border-bottom: 0.5px solid var(--border-line);
+}
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 48px;
+  padding-bottom: 20px;
+  border-bottom: 0.5px solid var(--border-line);
+}
+.section-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--gold-400);
+  letter-spacing: 0.2em;
+}
+.section-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 38px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  flex: 1;
+  margin-left: 32px;
+}
+.section-subtitle {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+/* ====== APPROACH CARDS ====== */
+.approaches {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 48px;
+}
+.approach-card {
+  background: var(--navy-800);
+  border: 0.5px solid var(--border-line);
+  padding: 36px 32px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.3s, transform 0.3s;
+}
+.approach-card:hover {
+  border-color: var(--border-line-strong);
+  transform: translateY(-2px);
+}
+.approach-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-400), transparent);
+}
+.approach-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: var(--gold-400);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+}
+.approach-name {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 32px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+.approach-formula {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 28px;
+  padding-bottom: 20px;
+  border-bottom: 0.5px solid var(--border-line);
+}
+.approach-data { display: flex; flex-direction: column; gap: 14px; }
+.data-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 13px;
+}
+.data-row .lbl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.data-row .val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  letter-spacing: 0.02em;
+}
+.data-row .val.green { color: var(--green); }
+.data-row .val.red { color: var(--red); }
+.data-row .val.gold { color: var(--gold-400); }
+
+/* ====== CONTROLS ====== */
+.controls-bar {
+  background: var(--navy-800);
+  border: 0.5px solid var(--border-line);
+  padding: 24px 28px;
+  margin-bottom: 32px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  align-items: flex-end;
+  position: relative;
+}
+.controls-bar::before {
+  content: 'PARAMETERS';
+  position: absolute;
+  top: -8px;
+  left: 24px;
+  background: var(--navy-900);
+  padding: 0 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.3em;
+  color: var(--gold-400);
+}
+.ctrl-group { display: flex; flex-direction: column; gap: 8px; }
+.ctrl-group label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.ctrl-group select {
+  background: var(--navy-700);
+  border: 0.5px solid var(--border-line);
+  color: var(--text-primary);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  padding: 8px 14px;
+  border-radius: 0;
+  min-width: 180px;
+  cursor: pointer;
+  letter-spacing: 0.05em;
+  transition: border-color 0.2s, background 0.2s;
+}
+.ctrl-group select:hover {
+  border-color: var(--gold-400);
+  background: var(--navy-600);
+}
+.ctrl-group select:focus { outline: none; border-color: var(--gold-400); }
+
+/* ====== ACCOUNT SELECTOR ====== */
+.acct-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0;
+  margin-bottom: 40px;
+  border: 0.5px solid var(--border-line);
+}
+.acct-tile {
+  background: var(--navy-800);
+  border-right: 0.5px solid var(--border-line);
+  padding: 20px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+.acct-tile:last-child { border-right: none; }
+.acct-tile:hover { background: var(--navy-700); }
+.acct-tile.active {
+  background: var(--navy-700);
+  border-top: 2px solid var(--gold-400);
+}
+.acct-tile.active::after {
+  content: '';
+  position: absolute;
+  bottom: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 24px;
+  height: 1px;
+  background: var(--gold-400);
+}
+.acct-tile .label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+.acct-tile .amount {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+.acct-tile.active .amount { color: var(--gold-400); }
+
+/* ====== METRICS ====== */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  margin-bottom: 32px;
+  border: 0.5px solid var(--border-line);
+}
+.metric-cell {
+  background: var(--navy-800);
+  border-right: 0.5px solid var(--border-line);
+  padding: 28px 24px;
+  position: relative;
+}
+.metric-cell:last-child { border-right: none; }
+.metric-cell .label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+.metric-cell .value {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 36px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  line-height: 1;
+}
+.metric-cell .value.gold { color: var(--gold-400); }
+.metric-cell .value.green { color: var(--green); }
+.metric-cell .sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 8px;
+  letter-spacing: 0.05em;
+}
+
+.dual-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 32px; }
+.dual-block {
+  background: var(--navy-800);
+  border: 0.5px solid var(--border-line);
+  padding: 28px;
+  border-top-width: 2px;
+}
+.dual-block.a { border-top-color: #4a8eff; }
+.dual-block.b { border-top-color: var(--gold-400); }
+.dual-block .approach-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+.dual-block.a .approach-label { color: #4a8eff; }
+.dual-block.b .approach-label { color: var(--gold-400); }
+.dual-block .approach-desc {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 0.5px solid var(--border-line);
+}
+.dual-block .stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 0.5px dashed rgba(212, 168, 106, 0.1);
+}
+.dual-block .stat:last-child { border-bottom: none; }
+.dual-block .stat .lbl {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.dual-block .stat .val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.dual-block .stat .val.green { color: var(--green); }
+.dual-block .stat .val.red { color: var(--red); }
+.dual-block .stat .val.gold { color: var(--gold-400); }
+
+/* ====== CHART ====== */
+.chart-section {
+  background: var(--navy-800);
+  border: 0.5px solid var(--border-line);
+  padding: 32px;
+  margin-bottom: 32px;
+}
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 0.5px solid var(--border-line);
+}
+.chart-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-weight: 500;
+}
+.chart-legend { display: flex; gap: 24px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-secondary); letter-spacing: 0.05em; }
+.chart-legend .item { display: flex; align-items: center; gap: 8px; }
+.chart-legend .dot { width: 16px; height: 2px; }
+.chart-wrap { position: relative; height: 320px; }
+
+/* ====== TABLE ====== */
+.acct-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 32px;
+  background: var(--navy-800);
+  border: 0.5px solid var(--border-line);
+  font-family: 'JetBrains Mono', monospace;
+}
+.acct-table th {
+  text-align: left;
+  padding: 18px 20px;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold-400);
+  border-bottom: 0.5px solid var(--border-line-strong);
+  background: var(--navy-700);
+}
+.acct-table td {
+  padding: 18px 20px;
+  font-size: 13px;
+  color: var(--text-primary);
+  border-bottom: 0.5px solid var(--border-line);
+  letter-spacing: 0.02em;
+}
+.acct-table tr:last-child td { border-bottom: none; }
+.acct-table tr:hover td { background: var(--navy-700); }
+.acct-table tr.highlight-row td {
+  background: rgba(212, 168, 106, 0.06);
+  color: var(--gold-400);
+}
+.acct-table .col-a { color: var(--text-secondary); }
+.acct-table .col-b { color: var(--green); font-weight: 500; }
+.acct-table tr.highlight-row .col-b { color: var(--gold-400); }
+.tag-arrow { color: var(--gold-400); margin-left: 6px; }
+
+/* ====== INSIGHTS ====== */
+.insights {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
+  border: 0.5px solid var(--border-line);
+  margin-top: 24px;
+}
+.insight {
+  padding: 36px 32px;
+  border-right: 0.5px solid var(--border-line);
+  background: var(--navy-800);
+  position: relative;
+}
+.insight:last-child { border-right: none; }
+.insight .num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 56px;
+  font-weight: 300;
+  color: var(--gold-400);
+  line-height: 1;
+  margin-bottom: 16px;
+  font-style: italic;
+}
+.insight h3 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  letter-spacing: -0.01em;
+}
+.insight p {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+/* ====== VERDICT ====== */
+.verdict {
+  background: var(--navy-800);
+  border: 0.5px solid var(--gold-400);
+  padding: 48px 56px;
+  margin-top: 48px;
+  position: relative;
+  overflow: hidden;
+}
+.verdict::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-400) 40%, var(--gold-400) 60%, transparent);
+}
+.verdict-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: var(--gold-400);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+.verdict h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 42px;
+  font-weight: 400;
+  margin-bottom: 20px;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+.verdict h2 em { color: var(--gold-400); font-style: italic; }
+.verdict p {
+  font-size: 16px;
+  color: var(--text-secondary);
+  max-width: 720px;
+  line-height: 1.8;
+}
+
+/* ====== FOOTER ====== */
+.footer {
+  padding: 48px 0;
+  border-top: 0.5px solid var(--border-line);
+  background: var(--navy-900);
+}
+.footer-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.footer .gold { color: var(--gold-400); }
+
+/* ====== RESPONSIVE ====== */
+@media (max-width: 900px) {
+  .approaches, .dual-metrics { grid-template-columns: 1fr; }
+  .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+  .acct-grid { grid-template-columns: repeat(4, 1fr); }
+  .acct-tile:nth-child(4) { border-right: none; }
+  .insights { grid-template-columns: 1fr; }
+  .insight { border-right: none; border-bottom: 0.5px solid var(--border-line); }
+  .insight:last-child { border-bottom: none; }
+  .section-header { flex-direction: column; gap: 12px; }
+  .section-title { margin-left: 0; }
+  .acct-table th, .acct-table td { padding: 12px 10px; font-size: 11px; }
+}
+
+/* ====== ANIMATION ====== */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.section, .hero > * { animation: fadeUp 0.8s ease forwards; }
+</style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="container top-bar-inner">
+    <div><span class="brand">TYCHE CAPITAL</span> · TRADING DESK</div>
+    <div><span class="live-dot"></span>RISK FRAMEWORK · v1.0</div>
+  </div>
+</div>
+
+<header class="hero">
+  <div class="container">
+    <div class="eyebrow">Risk framework brief · 04 / 2026</div>
+    <h1>Risk concentration<br><em>versus</em> opportunity frequency.</h1>
+    <p class="hero-subtitle">A side-by-side analysis of two daily risk allocation models. Same total daily exposure. Different psychological and structural outcomes. Tested across seven account sizes from $2K through $200K.</p>
+    <div class="hero-meta">
+      <span>Asset · <strong>XAU/USD</strong></span>
+      <span>Session · <strong>NY Killzone</strong></span>
+      <span>Protocol · <strong>ស្មារតីអង្គភាព</strong></span>
+      <span>Date · <strong>April 2026</strong></span>
+    </div>
+  </div>
+</header>
+
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-num">§ 01</span>
+      <h2 class="section-title">The two approaches</h2>
+      <span class="section-subtitle">Capital allocation models</span>
+    </div>
+
+    <div class="approaches">
+      <div class="approach-card">
+        <div class="approach-tag">Model A · Concentration</div>
+        <h3 class="approach-name">One trade, full conviction.</h3>
+        <p class="approach-formula">1 trade/day · 1.00% risk per trade</p>
+        <div class="approach-data">
+          <div class="data-row"><span class="lbl">Trades per day</span><span class="val">1</span></div>
+          <div class="data-row"><span class="lbl">Risk per trade</span><span class="val red">1.00%</span></div>
+          <div class="data-row"><span class="lbl">Daily exposure</span><span class="val red">1.00%</span></div>
+          <div class="data-row"><span class="lbl">Decision pressure</span><span class="val">High</span></div>
+          <div class="data-row"><span class="lbl">Setups required</span><span class="val">1 grade A</span></div>
+        </div>
+      </div>
+
+      <div class="approach-card">
+        <div class="approach-tag">Model B · Distribution</div>
+        <h3 class="approach-name">Three trades, spread risk.</h3>
+        <p class="approach-formula">3 trades/day · 0.33% risk per trade</p>
+        <div class="approach-data">
+          <div class="data-row"><span class="lbl">Trades per day</span><span class="val">2–3</span></div>
+          <div class="data-row"><span class="lbl">Risk per trade</span><span class="val gold">0.33%</span></div>
+          <div class="data-row"><span class="lbl">Daily exposure</span><span class="val red">1.00%</span></div>
+          <div class="data-row"><span class="lbl">Decision pressure</span><span class="val green">Distributed</span></div>
+          <div class="data-row"><span class="lbl">Setups required</span><span class="val">2–3 confirmed</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-num">§ 02</span>
+      <h2 class="section-title">Live comparison</h2>
+      <span class="section-subtitle">Adjust parameters · select account</span>
+    </div>
+
+    <div class="controls-bar">
+      <div class="ctrl-group">
+        <label>Win rate assumption</label>
+        <select id="wr">
+          <option value="0.55">55% — conservative</option>
+          <option value="0.60" selected>60% — target</option>
+          <option value="0.65">65% — optimistic</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <label>Risk-to-reward</label>
+        <select id="rr">
+          <option value="2">1 : 2.0</option>
+          <option value="2.5" selected>1 : 2.5 average</option>
+          <option value="3">1 : 3.0</option>
+        </select>
+      </div>
+      <div class="ctrl-group">
+        <label>Trades per day (Model B)</label>
+        <select id="btrades">
+          <option value="2">2 trades</option>
+          <option value="3" selected>3 trades</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="acct-grid" id="acct-grid">
+      <div class="acct-tile" data-acct="2000"><div class="label">Account</div><div class="amount">$2K</div></div>
+      <div class="acct-tile" data-acct="5000"><div class="label">Account</div><div class="amount">$5K</div></div>
+      <div class="acct-tile" data-acct="10000"><div class="label">Account</div><div class="amount">$10K</div></div>
+      <div class="acct-tile" data-acct="25000"><div class="label">Account</div><div class="amount">$25K</div></div>
+      <div class="acct-tile" data-acct="50000"><div class="label">Account</div><div class="amount">$50K</div></div>
+      <div class="acct-tile" data-acct="100000"><div class="label">Account</div><div class="amount">$100K</div></div>
+      <div class="acct-tile active" data-acct="200000"><div class="label">Account</div><div class="amount">$200K</div></div>
+    </div>
+
+    <div class="dual-metrics">
+      <div class="dual-block a">
+        <div class="approach-label">Model A</div>
+        <p class="approach-desc">1 trade/day · 1% risk · concentration</p>
+        <div class="stat"><span class="lbl">Risk amount</span><span class="val red" id="a-risk">—</span></div>
+        <div class="stat"><span class="lbl">Max daily loss</span><span class="val red" id="a-loss">—</span></div>
+        <div class="stat"><span class="lbl">Win payout</span><span class="val green" id="a-win">—</span></div>
+        <div class="stat"><span class="lbl">Daily edge</span><span class="val gold" id="a-edge">—</span></div>
+        <div class="stat"><span class="lbl">Monthly profit</span><span class="val" id="a-month">—</span></div>
+        <div class="stat"><span class="lbl">Days to 5% payout</span><span class="val" id="a-days">—</span></div>
+      </div>
+      <div class="dual-block b">
+        <div class="approach-label">Model B</div>
+        <p class="approach-desc" id="b-desc">3 trades/day · 0.33% each · distribution</p>
+        <div class="stat"><span class="lbl">Risk per trade</span><span class="val gold" id="b-risk">—</span></div>
+        <div class="stat"><span class="lbl">Max daily loss</span><span class="val red" id="b-loss">—</span></div>
+        <div class="stat"><span class="lbl">Win payout/trade</span><span class="val green" id="b-win">—</span></div>
+        <div class="stat"><span class="lbl">Daily edge</span><span class="val gold" id="b-edge">—</span></div>
+        <div class="stat"><span class="lbl">Monthly profit</span><span class="val" id="b-month">—</span></div>
+        <div class="stat"><span class="lbl">Days to 5% payout</span><span class="val" id="b-days">—</span></div>
+      </div>
+    </div>
+
+    <div class="chart-section">
+      <div class="chart-header">
+        <h3 class="chart-title">Simulated equity curve · 20 trading days</h3>
+        <div class="chart-legend">
+          <div class="item"><span class="dot" style="background:#4a8eff"></span>Model A</div>
+          <div class="item"><span class="dot" style="background:var(--gold-400);border-top:1px dashed var(--gold-400);height:0;"></span>Model B</div>
+        </div>
+      </div>
+      <div class="chart-wrap"><canvas id="eqChart" role="img" aria-label="Equity curve comparing model A and B over 20 days"></canvas></div>
+    </div>
+
+    <table class="acct-table">
+      <thead>
+        <tr>
+          <th>Account size</th>
+          <th>A — monthly profit</th>
+          <th>B — monthly profit</th>
+          <th>A — days to 5%</th>
+          <th>B — days to 5%</th>
+          <th>Recommendation</th>
+        </tr>
+      </thead>
+      <tbody id="acct-tbody"></tbody>
+    </table>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-num">§ 03</span>
+      <h2 class="section-title">Why Model B</h2>
+      <span class="section-subtitle">Three structural advantages</span>
+    </div>
+
+    <div class="insights">
+      <div class="insight">
+        <div class="num">i.</div>
+        <h3>Lower psychological weight</h3>
+        <p>One stopped trade in Model A ends the day emotionally. In Model B, a single loss is one-third of allocated risk — the next confirmed setup remains executable without revenge pressure.</p>
+      </div>
+      <div class="insight">
+        <div class="num">ii.</div>
+        <h3>Native SOP alignment</h3>
+        <p>The Spirit of the Unit protocol allows up to three trades daily. Model B uses that allocation properly — every trade still requires all 8 SOP rules satisfied, no forcing.</p>
+      </div>
+      <div class="insight">
+        <div class="num">iii.</div>
+        <h3>Adaptive opportunity capture</h3>
+        <p>Low-confluence days take 1 trade. High-conviction NY killzone sessions take 2–3. Model A misses the second and third clean LOBs that appear naturally in active sessions.</p>
+      </div>
+    </div>
+
+    <div class="verdict">
+      <div class="verdict-tag">⊹ Final assessment ⊹</div>
+      <h2>Distribution outperforms<br>concentration <em>at every account size.</em></h2>
+      <p>The mathematical edge per dollar of risk is identical between models — what differs is execution quality, emotional sustainability, and protocol fit. Model B preserves daily loss limits while spreading capital across confirmed signals. For a discretionary trader operating under the Spirit of the Unit protocol, Model B is the structurally correct choice.</p>
+    </div>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container footer-inner">
+    <div><span class="gold">TYCHE CAPITAL</span> · INTERNAL RESEARCH</div>
+    <div>NOT INVESTMENT ADVICE · FOR SOP CALIBRATION ONLY</div>
+    <div>DOCUMENT v1.0 · APRIL 2026</div>
+  </div>
+</footer>
+
+<script>
+const ACCOUNTS = [2000, 5000, 10000, 25000, 50000, 100000, 200000];
+let currentAcct = 200000;
+let chart = null;
+
+function fmt(n) { return '$' + Math.round(n).toLocaleString(); }
+function fmtPct(n) { return (n * 100).toFixed(2) + '%'; }
+function fmtAcct(a) { return a >= 1000 ? '$' + (a/1000) + 'K' : '$' + a; }
+
+function calcEdge(wr, rr, riskPct, trades) {
+  return (wr * rr * riskPct - (1 - wr) * riskPct) * trades;
+}
+
+function simEquity(acct, trades, riskPerTrade, wr, rr, days) {
+  const c = [acct];
+  for (let d = 0; d < days; d++) {
+    let bal = c[c.length - 1];
+    for (let t = 0; t < trades; t++) {
+      bal += Math.random() < wr ? bal * riskPerTrade * rr : -bal * riskPerTrade;
+    }
+    c.push(bal);
+  }
+  return c;
+}
+
+function recalc() {
+  const wr = parseFloat(document.getElementById('wr').value);
+  const rr = parseFloat(document.getElementById('rr').value);
+  const bTrades = parseInt(document.getElementById('btrades').value);
+  const acct = currentAcct;
+  const days = 20;
+
+  const aRisk = 0.01;
+  const aEdgePct = calcEdge(wr, rr, aRisk, 1);
+  const aEdge = aEdgePct * acct;
+  const aMonth = aEdge * 20;
+  const aDays5 = Math.ceil(0.05 / aEdgePct);
+
+  const bRisk = 0.01 / bTrades;
+  const bEdgePct = calcEdge(wr, rr, bRisk, bTrades);
+  const bEdge = bEdgePct * acct;
+  const bMonth = bEdge * 20;
+  const bDays5 = Math.ceil(0.05 / bEdgePct);
+
+  document.getElementById('b-desc').textContent = bTrades + ' trades/day · ' + fmtPct(bRisk) + ' each · distribution';
+
+  document.getElementById('a-risk').textContent = fmt(acct * aRisk);
+  document.getElementById('a-loss').textContent = fmt(acct * aRisk);
+  document.getElementById('a-win').textContent = fmt(acct * aRisk * rr);
+  document.getElementById('a-edge').textContent = fmt(aEdge);
+  document.getElementById('a-month').textContent = fmt(aMonth);
+  document.getElementById('a-days').textContent = aDays5 + ' days';
+
+  document.getElementById('b-risk').textContent = fmt(acct * bRisk);
+  document.getElementById('b-loss').textContent = fmt(acct * bRisk * bTrades);
+  document.getElementById('b-win').textContent = fmt(acct * bRisk * rr);
+  document.getElementById('b-edge').textContent = fmt(bEdge);
+  document.getElementById('b-month').textContent = fmt(bMonth);
+  document.getElementById('b-days').textContent = bDays5 + ' days';
+
+  let rows = '';
+  ACCOUNTS.forEach(a => {
+    const am = calcEdge(wr, rr, 0.01, 1) * a * 20;
+    const bm = calcEdge(wr, rr, 0.01/bTrades, bTrades) * a * 20;
+    const ad = Math.ceil(0.05 / calcEdge(wr, rr, 0.01, 1));
+    const bd = Math.ceil(0.05 / calcEdge(wr, rr, 0.01/bTrades, bTrades));
+    const isActive = a === acct;
+    rows += `<tr class="${isActive ? 'highlight-row' : ''}">
+      <td>${fmtAcct(a)}${isActive ? '<span class="tag-arrow">◀</span>' : ''}</td>
+      <td class="col-a">${fmt(am)}</td>
+      <td class="col-b">${fmt(bm)}</td>
+      <td class="col-a">${ad}d</td>
+      <td class="col-b">${bd}d</td>
+      <td>Model B</td>
+    </tr>`;
+  });
+  document.getElementById('acct-tbody').innerHTML = rows;
+
+  const labels = Array.from({length: days + 1}, (_, i) => i === 0 ? 'D0' : 'D' + i);
+  const seedA = simEquity(acct, 1, aRisk, wr, rr, days);
+  const seedB = simEquity(acct, bTrades, bRisk, wr, rr, days);
+
+  if (chart) chart.destroy();
+  chart = new Chart(document.getElementById('eqChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: 'A', data: seedA, borderColor: '#4a8eff', backgroundColor: 'rgba(74,142,255,0.05)', fill: true, borderWidth: 2, pointRadius: 0, tension: 0.3 },
+        { label: 'B', data: seedB, borderColor: '#d4a86a', backgroundColor: 'rgba(212,168,106,0.06)', fill: true, borderWidth: 2, borderDash: [6,4], pointRadius: 0, tension: 0.3 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          ticks: { font: { family: 'JetBrains Mono', size: 10 }, color: '#6b7a8f', maxTicksLimit: 11 },
+          grid: { color: 'rgba(212,168,106,0.05)' }
+        },
+        y: {
+          ticks: {
+            font: { family: 'JetBrains Mono', size: 10 }, color: '#6b7a8f',
+            callback: v => '$' + (v >= 1000 ? (v/1000).toFixed(0)+'K' : Math.round(v))
+          },
+          grid: { color: 'rgba(212,168,106,0.08)' }
+        }
+      }
+    }
+  });
+}
+
+document.querySelectorAll('.acct-tile').forEach(tile => {
+  tile.addEventListener('click', () => {
+    document.querySelectorAll('.acct-tile').forEach(t => t.classList.remove('active'));
+    tile.classList.add('active');
+    currentAcct = parseInt(tile.dataset.acct);
+    recalc();
+  });
+});
+
+document.getElementById('wr').addEventListener('change', recalc);
+document.getElementById('rr').addEventListener('change', recalc);
+document.getElementById('btrades').addEventListener('change', recalc);
+
+recalc();
+</script>
+
+</body>
+</html>

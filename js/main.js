@@ -16,6 +16,8 @@ import { renderAccountsPage, renderAccountDetail, openAccountForm } from './acco
 import { renderStrategiesPage, renderStrategyDetail, openStrategyForm } from './strategies.js';
 import { renderJournalPage, openJournalForm } from './journal.js';
 import { renderCalendarPage } from './calendar.js';
+import { renderDoctrineChecklistPage } from './doctrine.js';
+import { renderPlansPage, openPlanForm } from './plans.js';
 import { el, fmtMoney, fmtPct, ACCOUNT_TYPES, initials } from './utils.js';
 import { db, uid } from './db.js';
 
@@ -29,7 +31,12 @@ register('dashboard',   renderDashboardPage);
 register('accounts',    (param) => param ? renderAccountDetail(param) : renderAccountsPage());
 register('strategies',  (param) => param ? renderStrategyDetail(param) : renderStrategiesPage());
 register('journal',     renderJournalPage);
+register('plans',       renderPlansPage);
 register('calendar',    renderCalendarPage);
+register('doctrine',    (param) => {
+  if (param === 'checklist') renderDoctrineChecklistPage();
+  else go('dashboard');
+});
 register('calculator',  () => { renderCalcMeta(); });
 
 function renderCalcMeta() {
@@ -71,6 +78,7 @@ function updateAddButton() {
     accounts:  'Add Account',
     strategies:'Add Strategy',
     journal:   'Add Journal',
+    plans:     'New Plan',
     calendar:  'Add Journal',
     calculator: 'Add Account',
   };
@@ -89,6 +97,7 @@ function onAddClick() {
     case 'accounts':    openAccountForm();   break;
     case 'strategies':  openStrategyForm();  break;
     case 'journal':     openJournalForm();   break;
+    case 'plans':       openPlanForm();      break;
     case 'calendar':    openJournalForm();   break;
     case 'calculator':
     case 'dashboard':
@@ -174,7 +183,18 @@ async function cleanupSeededSamples() {
     if (staleIds.size) {
       for (const id of staleIds) await db.del('strategies', id);
       const bts = await db.getAll('journals');
-      for (const b of bts) if (staleIds.has(b.strategyId)) await db.del('journals', b.id);
+      for (const b of bts) {
+        const ids = (Array.isArray(b.strategyIds) && b.strategyIds.length)
+          ? b.strategyIds
+          : (b.strategyId ? [b.strategyId] : []);
+        const remaining = ids.filter(id => !staleIds.has(id));
+        if (!ids.length || remaining.length === ids.length) continue;
+        if (!remaining.length) {
+          await db.del('journals', b.id);
+        } else {
+          await db.put('journals', { ...b, strategyIds: remaining, strategyId: remaining[0] });
+        }
+      }
       const accs = await db.getAll('accounts');
       for (const a of accs) {
         if (Array.isArray(a.strategyIds) && a.strategyIds.some(id => staleIds.has(id))) {
@@ -281,8 +301,10 @@ async function boot() {
       accounts:  () => r.param ? renderAccountDetail(r.param) : renderAccountsPage(),
       strategies: () => r.param ? renderStrategyDetail(r.param) : renderStrategiesPage(),
       journal:   renderJournalPage,
+      plans:     renderPlansPage,
       calendar:  renderCalendarPage,
       calculator: renderCalcMeta,
+      doctrine:  () => r.param === 'checklist' ? renderDoctrineChecklistPage() : null,
     };
     routes[r.name]?.();
   });

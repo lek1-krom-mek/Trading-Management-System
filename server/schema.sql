@@ -36,7 +36,8 @@ CREATE TABLE IF NOT EXISTS strategies (
 
 CREATE TABLE IF NOT EXISTS journals (
   id               TEXT PRIMARY KEY,
-  strategy_id      TEXT,
+  strategy_id      TEXT,        -- legacy single id (mirrors strategy_ids[0] for filtering / FK)
+  strategy_ids     TEXT,        -- JSON array of strategy ids (multi-strategy per trade)
   account_id       TEXT,
   instrument       TEXT,
   timeframe        TEXT,
@@ -57,3 +58,50 @@ CREATE TABLE IF NOT EXISTS journals (
 CREATE INDEX IF NOT EXISTS idx_journals_strategy ON journals(strategy_id);
 CREATE INDEX IF NOT EXISTS idx_journals_account  ON journals(account_id);
 CREATE INDEX IF NOT EXISTS idx_journals_created  ON journals(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS trade_plans (
+  id                    TEXT PRIMARY KEY,
+  strategy_ids          TEXT,        -- JSON array of strategy ids
+  account_id            TEXT,
+  instrument            TEXT,
+  timeframe             TEXT,
+  direction             TEXT,        -- 'long' | 'short'
+  planned_entry         REAL,
+  planned_sl            REAL,
+  planned_tp            REAL,
+  planned_rr            REAL,
+  risk_pct              REAL,
+  check_results         TEXT,        -- JSON object: { "<checkId>": true|false }
+  grade                 TEXT,        -- 'A' | 'B' | 'C' | 'SKIP'
+  status                TEXT,        -- 'draft' | 'planned' | 'executed' | 'skipped' | 'expired'
+  journal_id            TEXT,
+  premortem             TEXT,
+  screenshot_path       TEXT,
+  discipline_violation  INTEGER DEFAULT 0,
+  created_at            INTEGER NOT NULL,
+  updated_at            INTEGER NOT NULL,
+  executed_at           INTEGER,
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE SET NULL,
+  FOREIGN KEY (journal_id) REFERENCES journals(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_plans_status   ON trade_plans(status);
+CREATE INDEX IF NOT EXISTS idx_plans_grade    ON trade_plans(grade);
+CREATE INDEX IF NOT EXISTS idx_plans_created  ON trade_plans(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS checks (
+  id           TEXT PRIMARY KEY,
+  scope        TEXT NOT NULL,        -- 'global' | 'strategy'
+  strategy_id  TEXT,
+  label        TEXT NOT NULL,
+  description  TEXT,
+  must_pass    INTEGER DEFAULT 0,    -- 0 | 1
+  position     INTEGER DEFAULT 0,
+  created_at   INTEGER NOT NULL,
+  updated_at   INTEGER NOT NULL,
+  FOREIGN KEY (strategy_id) REFERENCES strategies(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_checks_scope    ON checks(scope);
+CREATE INDEX IF NOT EXISTS idx_checks_strategy ON checks(strategy_id);
+CREATE INDEX IF NOT EXISTS idx_checks_position ON checks(position);

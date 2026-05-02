@@ -446,3 +446,11 @@
   color: var(--hint);
   letter-spacing: 0.04em;
 }
+
+.discipline-widget-row {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding: 12px 0;
+}
+.mini-stat { text-align: center; padding: 8px; }
+.mini-stat-l { font-size: 11px; color: rgba(255,255,255,0.5); text-transform: uppercase; letter-spacing: 0.05em; }
+.mini-stat-v { font-size: 22px; font-weight: 700; color: #FDE68A; margin: 4px 0; }
+.mini-stat-h { font-size: 11px; color: rgba(255,255,255,0.45); }
