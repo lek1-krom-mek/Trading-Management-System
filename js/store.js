@@ -99,11 +99,11 @@ export async function deleteStrategy(id) {
 
 export async function savejournal(obj) {
   if (!obj.id) obj.id = uid();
-  await db.put('journals', obj);
-  const i = data.journals.findIndex(x => x.id === obj.id);
-  if (i >= 0) data.journals[i] = obj; else data.journals.unshift(obj);
+  const saved = (await db.put('journals', obj)) || obj;
+  const i = data.journals.findIndex(x => x.id === saved.id);
+  if (i >= 0) data.journals[i] = saved; else data.journals.unshift(saved);
   notify('journals');
-  return obj;
+  return saved;
 }
 export async function deletejournal(id) {
   await db.del('journals', id);
