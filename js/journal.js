@@ -57,13 +57,23 @@ export function renderJournalPage() {
     { value: 'be',   label: 'Breakeven' },
   ]));
   bar.appendChild(filterSelect('Instrument', 'instrument', [{ value: 'all', label: 'All instruments' }, ...INSTRUMENTS.map(i => ({ value: i, label: i }))]));
+  bar.appendChild(filterSelect('Grade', 'grade', [
+    { value: 'all',         label: 'All grades' },
+    { value: 'A',           label: 'A' },
+    { value: 'B',           label: 'B' },
+    { value: 'C',           label: 'C' },
+    { value: 'Off-SOP',     label: 'Off-SOP' },
+    { value: 'Pre-grading', label: 'Pre-grading' },
+  ]));
   root.appendChild(bar);
 
   const filtered = data.journals.filter(b =>
     (filters.strategy === 'all'   || journalHasStrategy(b, filters.strategy)) &&
     (filters.account === 'all'    || b.accountId === filters.account) &&
     (filters.result === 'all'     || b.result === filters.result) &&
-    (filters.instrument === 'all' || b.instrument === filters.instrument)
+    (filters.instrument === 'all' || b.instrument === filters.instrument) &&
+    (filters.grade === 'all'
+      || (filters.grade === 'Pre-grading' ? b.preGrading === true : b.grade === filters.grade))
   );
 
   if (!filtered.length) {
@@ -105,6 +115,11 @@ function journalCard(b) {
     el('div', { class: 'bt-thumb-lg', style: b.screenshotPath ? { backgroundImage: `url(${b.screenshotPath})` } : {} },
       !b.screenshotPath ? el('div', { class: 'bt-thumb-placeholder' }, 'no image') : null,
       el('span', { class: 'bt-result-badge ' + (b.result || 'be') }, (b.result || 'be').toUpperCase()),
+      b.preGrading
+        ? el('span', { class: 'grade-pill grade-pill--pre-grading bt-grade-badge' }, 'Pre-grading')
+        : (b.grade
+          ? el('span', { class: `grade-pill grade-pill--${gradeClass(b.grade)} bt-grade-badge` }, b.grade)
+          : null),
       b.rAchieved ? el('span', { class: 'bt-r-badge' }, b.rAchieved + 'R') : null
     ),
     el('div', { class: 'bt-card-body' },
@@ -158,6 +173,8 @@ export function openJournalDetail(b) {
       : el('div', { class: 'bt-detail-image empty' }, 'No screenshot'),
     el('div', { class: 'bt-detail-meta' },
       metaPill('Result', (b.result || '—').toUpperCase(), `result ${b.result}`),
+      metaPill('Grade', b.preGrading ? 'Pre-grading' : (b.grade || '—'),
+        b.preGrading ? 'grade-pre-grading' : (b.grade ? `grade-${gradeClass(b.grade)}` : '')),
       metaPill('R achieved', b.rAchieved ? b.rAchieved + 'R' : '—'),
       metaPill('Account', a?.name || 'Unassigned'),
       metaPill('Entry', fmtDate(b.entryDate || b.createdAt))
