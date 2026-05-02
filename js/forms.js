@@ -210,13 +210,18 @@ export function toggleGroup({ name, value, options }) {
   return wrap;
 }
 
-/** Reads a form's values into a plain object, splitting comma strings from chip inputs */
-export function readForm(form, chipFields = []) {
+/**
+ * Reads a form's values into a plain object.
+ *  - chipFields: comma-separated chip inputs become arrays
+ *  - jsonFields: hidden inputs whose value is a JSON string become parsed objects
+ */
+export function readForm(form, chipFields = [], jsonFields = []) {
   const fd = new FormData(form);
   const obj = {};
   for (const [k, v] of fd.entries()) {
-    if (chipFields.includes(k)) obj[k] = v ? v.split(',').filter(Boolean) : [];
-    else obj[k] = v;
+    if (chipFields.includes(k))      obj[k] = v ? v.split(',').filter(Boolean) : [];
+    else if (jsonFields.includes(k)) { try { obj[k] = v ? JSON.parse(v) : null; } catch { obj[k] = null; } }
+    else                             obj[k] = v;
   }
   return obj;
 }
