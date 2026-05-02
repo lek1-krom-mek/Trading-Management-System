@@ -133,6 +133,23 @@ try {
 }
 
 // ── Field mapping (snake_case DB ↔ camelCase JS) ─────────
+const SOP_RULE_KEYS = ['rule_1','rule_2','rule_3','rule_4','rule_5','rule_6','rule_7','rule_8'];
+
+function computeJournalGradeServer(sopChecks) {
+  const n = SOP_RULE_KEYS.reduce((c, k) => c + (sopChecks?.[k]?.confirmed === true ? 1 : 0), 0);
+  const grade = n >= 7 ? 'A' : n >= 5 ? 'B' : n >= 3 ? 'C' : 'Off-SOP';
+  return { grade, confluenceCount: n };
+}
+
+function validateSopChecks(sopChecks) {
+  if (sopChecks == null) return { ok: true };
+  if (typeof sopChecks !== 'object') return { ok: false, msg: 'sopChecks must be an object' };
+  for (const k of SOP_RULE_KEYS) {
+    if (!(k in sopChecks)) return { ok: false, msg: `sopChecks missing rule key: ${k}` };
+  }
+  return { ok: true };
+}
+
 const MAPPERS = {
   accounts: {
     toDb: a => ({
@@ -211,6 +228,8 @@ const MAPPERS = {
       const ids = Array.isArray(b.strategyIds) && b.strategyIds.length
         ? b.strategyIds.filter(Boolean)
         : (b.strategyId ? [b.strategyId] : []);
+      const hasSop = b.sopChecks && typeof b.sopChecks === 'object';
+      const graded = hasSop ? computeJournalGradeServer(b.sopChecks) : null;
       return {
         id: b.id,
         strategy_id: ids[0] ?? null,
@@ -227,6 +246,10 @@ const MAPPERS = {
         description: b.description ?? null,
         tags: JSON.stringify(b.tags ?? []),
         plan_id: b.planId ?? null,
+        sop_checks: hasSop ? JSON.stringify(b.sopChecks) : null,
+        grade: graded?.grade ?? null,
+        confluence_count: graded?.confluenceCount ?? null,
+        pre_grading: hasSop ? 0 : 1,
         created_at: b.createdAt ?? Date.now(),
         updated_at: b.updatedAt ?? Date.now(),
       };
@@ -249,6 +272,10 @@ const MAPPERS = {
         description: r.description,
         tags: r.tags ? JSON.parse(r.tags) : [],
         planId: r.plan_id,
+        sopChecks: r.sop_checks ? JSON.parse(r.sop_checks) : null,
+        grade: r.grade,
+        confluenceCount: r.confluence_count,
+        preGrading: r.pre_grading === 1,
         createdAt: r.created_at,
         updatedAt: r.updated_at,
       };
@@ -379,6 +406,11 @@ app.put('/api/:store', (req, res) => {
   if (!isStore(store)) return res.status(404).json({ error: 'Unknown store' });
   const obj = req.body || {};
   if (!obj.id) return res.status(400).json({ error: 'id required' });
+
+  if (store === 'journals') {
+    const v = validateSopChecks(obj.sopChecks);
+    if (!v.ok) return res.status(400).json({ error: v.msg });
+  }
 
   const row = MAPPERS[store].toDb(obj);
   const cols = Object.keys(row);
