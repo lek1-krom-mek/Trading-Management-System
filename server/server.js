@@ -87,6 +87,14 @@ try {
   for (const [name, type] of adds) {
     if (!cols.includes(name)) db.exec(`ALTER TABLE accounts ADD COLUMN ${name} ${type}`);
   }
+  if (!cols.includes('personal_daily_cap_pct')) {
+    db.exec('ALTER TABLE accounts ADD COLUMN personal_daily_cap_pct REAL');
+    db.prepare('UPDATE accounts SET personal_daily_cap_pct = 3.0 WHERE personal_daily_cap_pct IS NULL').run();
+  }
+  if (!cols.includes('firm_daily_cap_pct')) {
+    db.exec('ALTER TABLE accounts ADD COLUMN firm_daily_cap_pct REAL');
+    db.prepare('UPDATE accounts SET firm_daily_cap_pct = 5.0 WHERE firm_daily_cap_pct IS NULL').run();
+  }
 } catch (err) {
   console.warn('[migrate] accounts columns:', err.message);
 }
