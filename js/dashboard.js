@@ -2,8 +2,9 @@
  * dashboard.js — Portfolio overview, strategy performance, and recent journal activity.
  */
 
-import { data, strategyStats, setActiveAccount } from './store.js';
+import { data, strategyStats, setActiveAccount, journalStrategyIds, journalHasStrategy } from './store.js';
 import { el, ACCOUNT_TYPES, ACCOUNT_STATUSES, initials, fmtMoney, fmtPct, fmtDate, fmtRelative, iconSVG, sparkline, equityCurve } from './utils.js';
+import { winRateByGrade, disciplineViolations, skipRatio } from './discipline.js';
 import { go } from './router.js';
 import { openAccountForm } from './accounts.js';
 import { openStrategyForm } from './strategies.js';
@@ -31,7 +32,7 @@ export function renderDashboardPage() {
       kpi(data.accounts.length,   'Accounts'),
       kpi(data.strategies.length, 'Strategies'),
       kpi(data.journals.length,  'Journal entries'),
-      kpi(fmtMoney(totalCapital(), { dp: 0 }), 'Total capital', 'gold')
+      kpi(fmtMoney(totalCapital(), { dp: 0 }), 'Total prifit', 'gold')
     )
   ));
 
@@ -79,8 +80,41 @@ export function renderDashboardPage() {
   // ── Mini PnL calendar (current month) ──
   root.appendChild(dashboardMiniCalendar(dashFilters.journalAccount));
 
+  // ── Discipline mini-widget ──
+  root.appendChild(disciplineWidget());
+
   // ── Doctrine links + copyright ──
   root.appendChild(doctrineFooter());
+}
+
+function disciplineWidget() {
+  const wr = winRateByGrade(data.plans, data.journals);
+  const dv = disciplineViolations(data.plans, data.journals);
+  const sr = skipRatio(data.plans, 30);
+
+  return el('section', {
+    class: 'card discipline-widget',
+    onClick: () => go('plans'),
+    style: { cursor: 'pointer', marginTop: '16px' },
+  },
+    el('div', { class: 'card-head' },
+      el('h3', {}, 'Discipline'),
+      el('span', { class: 'card-sub' }, 'Click to open Trade Plans →'),
+    ),
+    el('div', { class: 'discipline-widget-row' },
+      miniStat('A win rate', wr.A.winRate.toFixed(0) + '%', wr.A.wins + 'W / ' + wr.A.losses + 'L'),
+      miniStat('Skip ratio (30d)', sr.ratio ? (sr.ratio * 100).toFixed(0) + '%' : '—', sr.skipped + ' skipped'),
+      miniStat('Violations', dv.count.toString(), '$' + dv.total.toFixed(0)),
+    ),
+  );
+}
+
+function miniStat(label, value, hint) {
+  return el('div', { class: 'mini-stat' },
+    el('div', { class: 'mini-stat-l' }, label),
+    el('div', { class: 'mini-stat-v' }, value),
+    el('div', { class: 'mini-stat-h' }, hint),
+  );
 }
 
 function doctrineFooter() {
@@ -101,6 +135,18 @@ function doctrineFooter() {
         el('div', { class: 'doctrine-card-title' }, 'Gold Risk & R:R Analysis'),
         el('div', { class: 'doctrine-card-body' }, 'Optimal risk per trade for XAU/USD on HolaPrime — Kelly, drawdown, and execution plan.'),
         el('div', { class: 'doctrine-card-cta' }, 'Open brief →')
+      ),
+      el('a', { class: 'doctrine-card', href: 'risk_approach_comparison.html', target: '_blank', rel: 'noopener' },
+        el('div', { class: 'doctrine-card-mark' }, 'Study · 03'),
+        el('div', { class: 'doctrine-card-title' }, 'Concentration vs Distribution'),
+        el('div', { class: 'doctrine-card-body' }, 'One trade at 1% versus three trades at 0.33% — same daily exposure, different outcomes.'),
+        el('div', { class: 'doctrine-card-cta' }, 'Open study →')
+      ),
+      el('a', { class: 'doctrine-card', href: '#doctrine/checklist' },
+        el('div', { class: 'doctrine-card-mark' }, 'Checklist · 04'),
+        el('div', { class: 'doctrine-card-title' }, 'Global Discipline Checklist'),
+        el('div', { class: 'doctrine-card-body' }, 'Must-pass checks that apply to every Trade Plan — deal-breakers that auto-grade a plan SKIP when unticked.'),
+        el('div', { class: 'doctrine-card-cta' }, 'Edit checklist →')
       )
     ),
     el('div', { class: 'doctrine-copy' },
@@ -169,7 +215,7 @@ function winRateHue(winRate) {
 
 function strategyMiniCard(s) {
   const st = strategyStats(s.id);
-  const bts = data.journals.filter(b => b.strategyId === s.id);
+  const bts = data.journals.filter(b => journalHasStrategy(b, s.id));
   const curve = equityCurve(bts);
 
   const hasTrades = st.total > 0;
@@ -242,7 +288,11 @@ function journalHistorySection() {
 }
 
 function journalRow(b) {
-  const s = data.strategies.find(x => x.id === b.strategyId);
+  const strategies = journalStrategyIds(b).map(id => data.strategies.find(x => x.id === id)).filter(Boolean);
+  const primary = strategies[0];
+  const stratLabel = strategies.length
+    ? strategies.map(s => s.name).join(' + ')
+    : 'No strategy';
   const a = data.accounts.find(x => x.id === b.accountId);
   const amt = Math.abs(parseFloat(b.amount) || 0);
   const pnl = b.result === 'win' ? amt : b.result === 'loss' ? -amt : 0;
@@ -256,8 +306,8 @@ function journalRow(b) {
     ),
     el('div', { class: 'journal-body' },
       el('div', { class: 'journal-t' },
-        s ? el('span', { class: 'journal-strat-dot', style: { background: s.color || '#F59E0B' } }) : null,
-        el('span', {}, s?.name || 'No strategy')
+        primary ? el('span', { class: 'journal-strat-dot', style: { background: primary.color || '#F59E0B' } }) : null,
+        el('span', {}, stratLabel)
       ),
       el('div', { class: 'journal-s' },
         el('span', {}, a ? a.name : 'Unassigned'),

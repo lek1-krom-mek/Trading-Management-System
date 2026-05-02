@@ -2,7 +2,7 @@
  * accounts.js — CRUD + list / detail rendering for trading accounts.
  */
 
-import { data, saveAccount, deleteAccount, strategyById, setActiveAccount } from './store.js';
+import { data, saveAccount, deleteAccount, strategyById, setActiveAccount, journalStrategyIds } from './store.js';
 import { openFormPanel, field, textInput, numberInput, select, multiChips, toggleGroup, readForm } from './forms.js';
 import { el, ACCOUNT_TYPES, ACCOUNT_STATUSES, initials, fmtMoney, fmtPct, iconSVG, toast, sparkline } from './utils.js';
 import { go } from './router.js';
@@ -357,7 +357,7 @@ export function renderAccountDetail(id) {
   if (trades.length) {
     const grid = el('div', { class: 'bt-thumb-grid' });
     trades.forEach(t => {
-      const s = strategyById(t.strategyId);
+      const s = strategyById(journalStrategyIds(t)[0]);
       const amt = Math.abs(parseFloat(t.amount) || 0);
       const amtLabel = amt
         ? (t.result === 'loss' ? '-' : t.result === 'win' ? '+' : '') + fmtMoney(amt, { dp: 0 })

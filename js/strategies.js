@@ -2,7 +2,8 @@
  * strategies.js — CRUD + list / detail for trading strategies.
  */
 
-import { data, saveStrategy, deleteStrategy, strategyStats, accountsUsingStrategy } from './store.js';
+import { data, saveStrategy, deleteStrategy, strategyStats, accountsUsingStrategy, journalHasStrategy, strategyChecks, saveCheck, deleteCheck } from './store.js';
+import { checklistEditor } from './checklist.js';
 import { openFormPanel, field, textInput, numberInput, textArea, multiChips, colorPicker, readForm } from './forms.js';
 import { el, ENTRY_METHODS, TIMEFRAMES, INSTRUMENTS, STRATEGY_COLORS, iconSVG, toast, fmtPct, fmtDate, sparkline, equityCurve, initials } from './utils.js';
 import { emptyState } from './accounts.js';
@@ -34,7 +35,7 @@ export function renderStrategiesPage() {
 function strategyCard(s) {
   const stats = strategyStats(s.id);
   const accts = accountsUsingStrategy(s.id);
-  const bts = data.journals.filter(b => b.strategyId === s.id);
+  const bts = data.journals.filter(b => journalHasStrategy(b, s.id));
   const last = bts[0];
   const curve = equityCurve(bts);
   const card = el('article', { class: 'strategy-card', onClick: (e) => {
@@ -95,7 +96,7 @@ export function renderStrategyDetail(id) {
   if (!s) { go('strategies'); return; }
   const stats = strategyStats(s.id);
   const accts = accountsUsingStrategy(s.id);
-  const bts = data.journals.filter(b => b.strategyId === s.id);
+  const bts = data.journals.filter(b => journalHasStrategy(b, s.id));
   root.innerHTML = '';
   root.appendChild(el('div', { class: 'page-head' },
     el('div', {},
@@ -198,7 +199,18 @@ export function openStrategyForm(existing = null) {
       field('Preferred R:R', numberInput({ name: 'preferredRR', value: s.preferredRR ?? 2, min: 0.5, step: 0.5 })),
       field('Max SL (pips)', numberInput({ name: 'maxSLPips',  value: s.maxSLPips ?? 20, min: 1 }))
     ),
-    field('Notes', textArea({ name: 'notes', value: s.notes || '', placeholder: 'Any extra rules, filters, session preferences…', rows: 3 }))
+    field('Notes', textArea({ name: 'notes', value: s.notes || '', placeholder: 'Any extra rules, filters, session preferences…', rows: 3 })),
+    field('Setup checklist',
+      existing && existing.id
+        ? checklistEditor({
+            checks: strategyChecks(existing.id),
+            scope: 'strategy',
+            strategyId: existing.id,
+            onSave: async (c) => { await saveCheck(c); },
+            onDelete: async (id) => { await deleteCheck(id); },
+          })
+        : el('div', { class: 'form-empty-note' }, 'Save the strategy first, then come back to add setup checks.'),
+      'Tap one or more conditions that should be present for an A-grade entry.'),
   );
 
   openFormPanel({

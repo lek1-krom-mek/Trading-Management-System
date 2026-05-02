@@ -6,7 +6,7 @@
  *   - Display-only mini calendar for the dashboard (current month).
  */
 
-import { data } from './store.js';
+import { data, journalStrategyIds } from './store.js';
 import { go } from './router.js';
 import { openJournalDetail } from './journal.js';
 import { el, fmtMoney, fmtPct, fmtDate, iconSVG } from './utils.js';
@@ -331,7 +331,9 @@ function fmtKeyToLong(key) {
 }
 
 function dayTradeRow(t, closePopup) {
-  const s = data.strategies.find(x => x.id === t.strategyId);
+  const strategies = journalStrategyIds(t).map(id => data.strategies.find(x => x.id === id)).filter(Boolean);
+  const primary = strategies[0];
+  const stratLabel = strategies.length ? strategies.map(s => s.name).join(' + ') : 'No strategy';
   const a = data.accounts.find(x => x.id === t.accountId);
   const pnl = pnlOf(t);
   const tone = pnl > 0 ? 'pos' : pnl < 0 ? 'neg' : 'be';
@@ -346,8 +348,8 @@ function dayTradeRow(t, closePopup) {
     ),
     el('div', { class: 'cal-day-row-body' },
       el('div', { class: 'cal-day-row-t' },
-        s ? el('span', { class: 'journal-strat-dot', style: { background: s.color || '#F59E0B' } }) : null,
-        el('span', {}, s?.name || 'No strategy')
+        primary ? el('span', { class: 'journal-strat-dot', style: { background: primary.color || '#F59E0B' } }) : null,
+        el('span', {}, stratLabel)
       ),
       el('div', { class: 'cal-day-row-s' },
         el('span', {}, a ? a.name : 'Unassigned'),

@@ -9,6 +9,8 @@ export const data = {
   accounts:   [],
   strategies: [],
   journals:  [],
+  plans:      [],
+  checks:     [],
   activeAccountId: null,
 };
 
@@ -17,14 +19,25 @@ export function subscribe(fn) { listeners.add(fn); return () => listeners.delete
 function notify(type) { listeners.forEach(fn => fn(type)); }
 
 export async function loadAll() {
-  const [a, s, b] = await Promise.all([
-    db.getAll('accounts'),
-    db.getAll('strategies'),
-    db.getAll('journals'),
+  // Each collection loads independently — a failure on the new trade_plans/checks
+  // endpoints (e.g. older server without those routes) must NOT wipe the existing
+  // accounts/strategies/journals from the UI.
+  const safe = (store) => db.getAll(store).catch(err => {
+    console.warn(`[store] failed to load ${store}:`, err.message);
+    return [];
+  });
+  const [a, s, b, p, c] = await Promise.all([
+    safe('accounts'),
+    safe('strategies'),
+    safe('journals'),
+    safe('trade_plans'),
+    safe('checks'),
   ]);
-  data.accounts   = a.sort((x,y) => (y.createdAt||0) - (x.createdAt||0));
-  data.strategies = s.sort((x,y) => (y.createdAt||0) - (x.createdAt||0));
-  data.journals  = b.sort((x,y) => (y.createdAt||0) - (x.createdAt||0));
+  data.accounts   = (a || []).sort((x,y) => (y.createdAt||0) - (x.createdAt||0));
+  data.strategies = (s || []).sort((x,y) => (y.createdAt||0) - (x.createdAt||0));
+  data.journals   = (b || []).sort((x,y) => (y.createdAt||0) - (x.createdAt||0));
+  data.plans      = (p || []).sort((x,y) => (y.createdAt||0) - (x.createdAt||0));
+  data.checks     = (c || []).sort((x,y) => (x.position||0) - (y.position||0));
   data.activeAccountId = localStorage.getItem('tms-active-account') || (data.accounts[0]?.id || null);
   notify('all');
 }
@@ -71,16 +84,26 @@ export async function deleteStrategy(id) {
       await db.put('accounts', a);
     }
   }
+  // Remove references from journals (multi-strategy field is JSON, not an FK)
+  for (const b of data.journals) {
+    const ids = journalStrategyIds(b);
+    if (ids.includes(id)) {
+      const remaining = ids.filter(x => x !== id);
+      b.strategyIds = remaining;
+      b.strategyId = remaining[0] || null;
+      await db.put('journals', b);
+    }
+  }
   notify('strategies');
 }
 
 export async function savejournal(obj) {
   if (!obj.id) obj.id = uid();
-  await db.put('journals', obj);
-  const i = data.journals.findIndex(x => x.id === obj.id);
-  if (i >= 0) data.journals[i] = obj; else data.journals.unshift(obj);
+  const saved = (await db.put('journals', obj)) || obj;
+  const i = data.journals.findIndex(x => x.id === saved.id);
+  if (i >= 0) data.journals[i] = saved; else data.journals.unshift(saved);
   notify('journals');
-  return obj;
+  return saved;
 }
 export async function deletejournal(id) {
   await db.del('journals', id);
@@ -93,8 +116,20 @@ export function accountById(id)   { return data.accounts.find(a => a.id === id);
 export function strategyById(id)  { return data.strategies.find(s => s.id === id); }
 export function activeAccount()   { return accountById(data.activeAccountId); }
 
+// Returns the list of strategy ids attached to a journal entry, falling back
+// to the legacy single `strategyId` field for entries written before the
+// multi-strategy migration.
+export function journalStrategyIds(b) {
+  if (b && Array.isArray(b.strategyIds) && b.strategyIds.length) return b.strategyIds;
+  return b && b.strategyId ? [b.strategyId] : [];
+}
+
+export function journalHasStrategy(b, strategyId) {
+  return journalStrategyIds(b).includes(strategyId);
+}
+
 export function strategyStats(strategyId) {
-  const bt = data.journals.filter(b => b.strategyId === strategyId);
+  const bt = data.journals.filter(b => journalHasStrategy(b, strategyId));
   const wins = bt.filter(b => b.result === 'win').length;
   const losses = bt.filter(b => b.result === 'loss').length;
   const be = bt.filter(b => b.result === 'be').length;
@@ -110,4 +145,78 @@ export function strategyStats(strategyId) {
 
 export function accountsUsingStrategy(strategyId) {
   return data.accounts.filter(a => a.strategyIds?.includes(strategyId));
+}
+
+// ── Plans CRUD ───────────────────────────────────────────
+export async function savePlan(obj) {
+  if (!obj.id) obj.id = uid();
+  await db.put('trade_plans', obj);
+  const i = data.plans.findIndex(x => x.id === obj.id);
+  if (i >= 0) data.plans[i] = obj; else data.plans.unshift(obj);
+  notify('plans');
+  return obj;
+}
+export async function deletePlan(id) {
+  await db.del('trade_plans', id);
+  data.plans = data.plans.filter(x => x.id !== id);
+  // Server unlinks journals; reflect that locally
+  for (const j of data.journals) {
+    if (j.planId === id) j.planId = null;
+  }
+  notify('plans');
+}
+
+// Mark a plan as skipped (no journal created)
+export async function skipPlan(id) {
+  const p = data.plans.find(x => x.id === id);
+  if (!p) return;
+  const updated = { ...p, status: 'skipped', updatedAt: Date.now() };
+  await savePlan(updated);
+  return updated;
+}
+
+// Link a plan to a journal once executed. Sets discipline_violation if grade was SKIP.
+export async function executePlan(planId, journalId) {
+  const p = data.plans.find(x => x.id === planId);
+  if (!p) return;
+  const updated = {
+    ...p,
+    status: 'executed',
+    journalId,
+    executedAt: Date.now(),
+    disciplineViolation: p.grade === 'SKIP',
+  };
+  await savePlan(updated);
+  return updated;
+}
+
+// ── Checks CRUD ──────────────────────────────────────────
+export async function saveCheck(obj) {
+  if (!obj.id) obj.id = uid();
+  await db.put('checks', obj);
+  const i = data.checks.findIndex(x => x.id === obj.id);
+  if (i >= 0) data.checks[i] = obj; else data.checks.push(obj);
+  data.checks.sort((a, b) => (a.position||0) - (b.position||0));
+  notify('checks');
+  return obj;
+}
+export async function deleteCheck(id) {
+  await db.del('checks', id);
+  data.checks = data.checks.filter(x => x.id !== id);
+  notify('checks');
+}
+
+// ── Plan helpers ─────────────────────────────────────────
+export function planById(id) { return data.plans.find(p => p.id === id); }
+
+// Returns global checks ordered by position.
+export function globalChecks() {
+  return data.checks.filter(c => c.scope === 'global').sort((a, b) => (a.position||0) - (b.position||0));
+}
+
+// Returns checks for a specific strategy ordered by position.
+export function strategyChecks(strategyId) {
+  return data.checks
+    .filter(c => c.scope === 'strategy' && c.strategyId === strategyId)
+    .sort((a, b) => (a.position||0) - (b.position||0));
 }
