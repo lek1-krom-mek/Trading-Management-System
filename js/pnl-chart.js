@@ -1,6 +1,19 @@
 import { data, journalHasStrategy } from './store.js';
 import { el, fmtMoney, fmtDate, iconSVG } from './utils.js';
 
+const SVG_NS = 'http://www.w3.org/2000/svg';
+function svgEl(tag, attrs = {}, ...children) {
+  const node = document.createElementNS(SVG_NS, tag);
+  for (const [k, v] of Object.entries(attrs))
+    if (v !== null && v !== undefined && v !== false) node.setAttribute(k, String(v));
+  for (const c of children.flat()) {
+    if (c === null || c === undefined || c === false) continue;
+    if (typeof c === 'string' || typeof c === 'number') node.appendChild(document.createTextNode(String(c)));
+    else node.appendChild(c);
+  }
+  return node;
+}
+
 function computePnlData(journals, filters) {
   const { range, accountId, strategyId } = filters;
 
@@ -101,10 +114,11 @@ function buildChartSVG(points, opts = {}) {
 
   if (!points.length) {
     const zeroY = PAD.top + ch / 2;
-    return el('svg', { width: '100%', height: H, viewBox: `0 0 ${W} ${H}`, class: 'pnl-svg' },
-      el('line', { x1: PAD.left, y1: zeroY, x2: W - PAD.right, y2: zeroY, stroke: 'rgba(255,255,255,0.15)', 'stroke-width': 1, 'stroke-dasharray': '4 4' }),
-      el('text', { x: W / 2, y: zeroY - 12, fill: 'rgba(255,255,255,0.3)', 'font-size': 12, 'text-anchor': 'middle', 'font-family': 'var(--font-mono, monospace)' }, 'No trades in this period')
+    const emptySvg = svgEl('svg', { width: '100%', height: H, viewBox: `0 0 ${W} ${H}`, class: 'pnl-svg' },
+      svgEl('line', { x1: PAD.left, y1: zeroY, x2: W - PAD.right, y2: zeroY, stroke: 'rgba(255,255,255,0.15)', 'stroke-width': 1, 'stroke-dasharray': '4 4' }),
+      svgEl('text', { x: W / 2, y: zeroY - 12, fill: 'rgba(255,255,255,0.3)', 'font-size': 12, 'text-anchor': 'middle', 'font-family': 'var(--font-mono, monospace)' }, 'No trades in this period')
     );
+    return emptySvg;
   }
 
   const vals = points.map(p => p.cumPnl);
@@ -124,7 +138,7 @@ function buildChartSVG(points, opts = {}) {
 
   const uid = 'pnl-' + Math.random().toString(36).slice(2, 8);
 
-  const svg = el('svg', { width: '100%', height: H, viewBox: `0 0 ${W} ${H}`, class: 'pnl-svg', 'data-uid': uid });
+  const svg = svgEl('svg', { width: '100%', height: H, viewBox: `0 0 ${W} ${H}`, class: 'pnl-svg', 'data-uid': uid });
 
   // SVG defs: gradients and clip-paths (static structure, no user data)
   svg.innerHTML = [
@@ -146,58 +160,32 @@ function buildChartSVG(points, opts = {}) {
   for (const v of yTicks) {
     const y = toY(v);
     const isZero = v === 0;
-    svg.appendChild(el('line', {
+    svg.appendChild(svgEl('line', {
       x1: PAD.left, y1: y, x2: W - PAD.right, y2: y,
       stroke: isZero ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.05)',
       'stroke-width': 1,
       ...(isZero ? { 'stroke-dasharray': '4 4' } : {}),
     }));
-    svg.appendChild(el('text', {
+    svg.appendChild(svgEl('text', {
       x: PAD.left - 6, y: y + 3.5, fill: 'rgba(255,255,255,0.25)',
       'font-size': 9, 'text-anchor': 'end', 'font-family': 'var(--font-mono, monospace)',
     }, fmtDollar(v)));
   }
 
   // Area fills (clipped above/below zero)
-  const areaAbove = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  areaAbove.setAttribute('d', areaD);
-  areaAbove.setAttribute('fill', `url(#${uid}-gG)`);
-  areaAbove.setAttribute('clip-path', `url(#${uid}-clipAbove)`);
-  svg.appendChild(areaAbove);
-
-  const areaBelow = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  areaBelow.setAttribute('d', areaD);
-  areaBelow.setAttribute('fill', `url(#${uid}-gR)`);
-  areaBelow.setAttribute('clip-path', `url(#${uid}-clipBelow)`);
-  svg.appendChild(areaBelow);
+  svg.appendChild(svgEl('path', { d: areaD, fill: `url(#${uid}-gG)`, 'clip-path': `url(#${uid}-clipAbove)` }));
+  svg.appendChild(svgEl('path', { d: areaD, fill: `url(#${uid}-gR)`, 'clip-path': `url(#${uid}-clipBelow)` }));
 
   // Lines (clipped for dual-tone green/red)
-  const lineAbove = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  lineAbove.setAttribute('d', pathD);
-  lineAbove.setAttribute('fill', 'none');
-  lineAbove.setAttribute('stroke', '#10B981');
-  lineAbove.setAttribute('stroke-width', '2.5');
-  lineAbove.setAttribute('stroke-linejoin', 'round');
-  lineAbove.setAttribute('stroke-linecap', 'round');
-  lineAbove.setAttribute('clip-path', `url(#${uid}-clipAbove)`);
-  svg.appendChild(lineAbove);
-
-  const lineBelow = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  lineBelow.setAttribute('d', pathD);
-  lineBelow.setAttribute('fill', 'none');
-  lineBelow.setAttribute('stroke', '#EF4444');
-  lineBelow.setAttribute('stroke-width', '2.5');
-  lineBelow.setAttribute('stroke-linejoin', 'round');
-  lineBelow.setAttribute('stroke-linecap', 'round');
-  lineBelow.setAttribute('clip-path', `url(#${uid}-clipBelow)`);
-  svg.appendChild(lineBelow);
+  svg.appendChild(svgEl('path', { d: pathD, fill: 'none', stroke: '#10B981', 'stroke-width': 2.5, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', 'clip-path': `url(#${uid}-clipAbove)` }));
+  svg.appendChild(svgEl('path', { d: pathD, fill: 'none', stroke: '#EF4444', 'stroke-width': 2.5, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', 'clip-path': `url(#${uid}-clipBelow)` }));
 
   // X-axis date labels (max 6)
   const dateCount = Math.min(6, points.length);
   const rangeDays = points.length > 1 ? (points[points.length - 1].date - points[0].date) / 86400000 : 1;
   for (let i = 0; i < dateCount; i++) {
     const idx = Math.round(i / (dateCount - 1) * (points.length - 1));
-    svg.appendChild(el('text', {
+    svg.appendChild(svgEl('text', {
       x: toX(idx), y: H - 6, fill: 'rgba(255,255,255,0.2)',
       'font-size': 9, 'text-anchor': 'middle',
     }, fmtAxisDate(points[idx].date, rangeDays)));
