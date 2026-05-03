@@ -1,4 +1,4 @@
-import { data, journalHasStrategy } from './store.js';
+import { data, journalHasStrategy, accountById } from './store.js';
 import { el, fmtMoney, fmtDate, iconSVG, customSelect } from './utils.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -15,11 +15,15 @@ function svgEl(tag, attrs = {}, ...children) {
 }
 
 function computePnlData(journals, filters) {
-  const { range, accountId, strategyId } = filters;
+  const { range, accountId, strategyId, status } = filters;
 
   let filtered = journals.filter(j => {
     if (accountId && accountId !== 'all' && j.accountId !== accountId) return false;
     if (strategyId && strategyId !== 'all' && !journalHasStrategy(j, strategyId)) return false;
+    if (status && status !== 'all') {
+      const acct = accountById(j.accountId);
+      if (!acct || acct.status !== status) return false;
+    }
     return true;
   });
 
@@ -197,7 +201,7 @@ function buildChartSVG(points, opts = {}) {
   return svg;
 }
 
-let chartFilters = { range: 'all', accountId: 'all', strategyId: 'all' };
+let chartFilters = { range: 'all', accountId: 'all', strategyId: 'all', status: 'all' };
 
 function statBox(label, value, tone) {
   return el('div', { class: 'pnl-stat' },
@@ -244,10 +248,19 @@ function rangeRow(active, onChange) {
 function filterRow(onChange) {
   const accOptions = [{ value: 'all', label: 'All accounts' }, ...data.accounts.map(a => ({ value: a.id, label: a.name }))];
   const stratOptions = [{ value: 'all', label: 'All strategies' }, ...data.strategies.map(s => ({ value: s.id, label: s.name }))];
+  const statusOptions = [
+    { value: 'all',    label: 'All statuses' },
+    { value: 'active', label: 'Active' },
+    { value: 'paused', label: 'Paused' },
+    { value: 'passed', label: 'Passed' },
+    { value: 'funded', label: 'Funded' },
+    { value: 'blown',  label: 'Blown' },
+  ];
 
   return el('div', { class: 'pnl-filter-row' },
     customSelect(accOptions, chartFilters.accountId, (v) => onChange('accountId', v)),
-    customSelect(stratOptions, chartFilters.strategyId, (v) => onChange('strategyId', v))
+    customSelect(stratOptions, chartFilters.strategyId, (v) => onChange('strategyId', v)),
+    customSelect(statusOptions, chartFilters.status, (v) => onChange('status', v))
   );
 }
 
