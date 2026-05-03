@@ -353,7 +353,32 @@ function renderChart(container, heightOverride) {
   container.appendChild(wrap);
 }
 
-function openPnlOverlay() {}
+function openPnlOverlay() {
+  const existing = document.querySelector('.pnl-chart-overlay');
+  if (existing) existing.remove();
+
+  const content = el('div', { class: 'pnl-chart-content' });
+
+  const overlay = el('div', { class: 'pnl-chart-overlay' },
+    el('div', { style: { position: 'relative', maxWidth: '1200px', width: '100%', margin: '0 auto' } },
+      el('div', { class: 'pnl-overlay-title' }, 'Cumulative PnL'),
+      el('button', { class: 'pnl-overlay-close', onClick: close },
+        el('span', { html: iconSVG('close') }), ' Close'
+      ),
+      content
+    )
+  );
+
+  function close() {
+    overlay.remove();
+    document.removeEventListener('keydown', onKey);
+  }
+  function onKey(e) { if (e.key === 'Escape') close(); }
+  document.addEventListener('keydown', onKey);
+
+  renderChart(content, 500);
+  document.body.appendChild(overlay);
+}
 
 export function pnlChartSection() {
   const content = el('div', { class: 'pnl-chart-content' });
