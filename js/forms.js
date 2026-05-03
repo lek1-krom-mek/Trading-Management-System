@@ -2,7 +2,7 @@
  * forms.js — Slide-in form panel primitives shared by account/strategy/journal forms.
  */
 
-import { el } from './utils.js';
+import { el, customSelect } from './utils.js';
 
 let activePanel = null;
 
@@ -77,13 +77,11 @@ export function textArea({ name, value = '', placeholder = '', rows = 4 }) {
 }
 
 export function select({ name, value, options, required = false }) {
-  const s = el('select', { name, required: required ? 'required' : null, class: 'text-input select-input' });
-  for (const o of options) {
-    const opt = el('option', { value: o.value }, o.label);
-    if (o.value === value) opt.selected = true;
-    s.appendChild(opt);
-  }
-  return s;
+  const hidden = el('input', { type: 'hidden', name, value: value || '' });
+  if (required) hidden.setAttribute('required', 'required');
+  const dropdown = customSelect(options, value, (v) => { hidden.value = v; });
+  const wrap = el('div', { class: 'form-select-wrap' }, hidden, dropdown);
+  return wrap;
 }
 
 export function multiChips({ options, values = [], name }) {

@@ -1,5 +1,5 @@
 import { data, journalHasStrategy } from './store.js';
-import { el, fmtMoney, fmtDate, iconSVG } from './utils.js';
+import { el, fmtMoney, fmtDate, iconSVG, customSelect } from './utils.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 function svgEl(tag, attrs = {}, ...children) {
@@ -239,52 +239,6 @@ function rangeRow(active, onChange) {
       }, r.label)
     )
   );
-}
-
-function customSelect(options, activeValue, onSelect) {
-  let open = false;
-  const activeOpt = options.find(o => o.value === activeValue) || options[0];
-
-  const label = el('div', { class: 'pnl-select-label' },
-    el('span', { class: 'pnl-select-text' }, activeOpt.label),
-    el('span', { class: 'pnl-select-arrow', html: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' })
-  );
-
-  const list = el('div', { class: 'pnl-select-list' });
-  options.forEach(o => {
-    const item = el('div', {
-      class: 'pnl-select-item' + (o.value === activeValue ? ' active' : ''),
-      onClick: (e) => {
-        e.stopPropagation();
-        onSelect(o.value);
-        close();
-      },
-    }, o.label);
-    list.appendChild(item);
-  });
-
-  const wrap = el('div', { class: 'pnl-select', tabindex: '0' }, label, list);
-
-  function toggle() { open ? close() : openMenu(); }
-  function openMenu() {
-    open = true;
-    wrap.classList.add('open');
-    document.addEventListener('click', outsideClick, true);
-  }
-  function close() {
-    open = false;
-    wrap.classList.remove('open');
-    document.removeEventListener('click', outsideClick, true);
-  }
-  function outsideClick(e) { if (!wrap.contains(e.target)) close(); }
-
-  label.addEventListener('click', (e) => { e.stopPropagation(); toggle(); });
-  wrap.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') close();
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
-  });
-
-  return wrap;
 }
 
 function filterRow(onChange) {

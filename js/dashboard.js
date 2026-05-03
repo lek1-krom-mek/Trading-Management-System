@@ -3,7 +3,7 @@
  */
 
 import { data, strategyStats, setActiveAccount, journalStrategyIds, journalHasStrategy } from './store.js';
-import { el, ACCOUNT_TYPES, ACCOUNT_STATUSES, initials, fmtMoney, fmtPct, fmtDate, fmtRelative, iconSVG, sparkline, equityCurve } from './utils.js';
+import { el, ACCOUNT_TYPES, ACCOUNT_STATUSES, initials, fmtMoney, fmtPct, fmtDate, fmtRelative, iconSVG, sparkline, equityCurve, customSelect } from './utils.js';
 import { winRateByGrade, disciplineViolations, skipRatio } from './discipline.js';
 import { dailyCapBand } from './daily-cap-band.js';
 import { go } from './router.js';
@@ -253,12 +253,7 @@ function strategyMiniCard(s) {
 
 function journalHistorySection() {
   const accountOptions = [{ value: 'all', label: 'All accounts' }, ...data.accounts.map(a => ({ value: a.id, label: a.name }))];
-  const accountSelect = el('select', { class: 'filter-select dash-filter-select', onChange: (e) => { dashFilters.journalAccount = e.target.value; renderDashboardPage(); } });
-  accountOptions.forEach(o => {
-    const opt = el('option', { value: o.value }, o.label);
-    if (dashFilters.journalAccount === o.value) opt.selected = true;
-    accountSelect.appendChild(opt);
-  });
+  const accountSelect = customSelect(accountOptions, dashFilters.journalAccount, (v) => { dashFilters.journalAccount = v; renderDashboardPage(); });
 
   const section = el('section', { class: 'dash-section' },
     el('div', { class: 'dash-section-head' },

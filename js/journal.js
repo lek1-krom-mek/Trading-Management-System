@@ -5,7 +5,7 @@
 
 import { data, savejournal, deletejournal, strategyById, accountById, saveAccount, journalStrategyIds, journalHasStrategy, executePlan } from './store.js';
 import { openFormPanel, field, textInput, numberInput, textArea, select, toggleGroup, imageUpload, multiChips, readForm } from './forms.js';
-import { el, INSTRUMENTS, TIMEFRAMES, iconSVG, toast, fmtDate, fmtRelative } from './utils.js';
+import { el, INSTRUMENTS, TIMEFRAMES, iconSVG, toast, fmtDate, fmtRelative, customSelect } from './utils.js';
 import { emptyState } from './accounts.js';
 import { sopChecklistField, gradeClass } from './sop-checklist.js';
 
@@ -90,15 +90,9 @@ export function renderJournalPage() {
 export const renderjournalPage = renderJournalPage;
 
 function filterSelect(label, key, options) {
-  const sel = el('select', { class: 'filter-select', onChange: (e) => { filters[key] = e.target.value; renderJournalPage(); } });
-  options.forEach(o => {
-    const opt = el('option', { value: o.value }, o.label);
-    if (filters[key] === o.value) opt.selected = true;
-    sel.appendChild(opt);
-  });
   return el('label', { class: 'filter-field' },
     el('span', {}, label),
-    sel
+    customSelect(options, filters[key], (v) => { filters[key] = v; renderJournalPage(); })
   );
 }
 

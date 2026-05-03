@@ -9,7 +9,7 @@
 import { data, journalStrategyIds } from './store.js';
 import { go } from './router.js';
 import { openJournalDetail } from './journal.js';
-import { el, fmtMoney, fmtPct, fmtDate, iconSVG } from './utils.js';
+import { el, fmtMoney, fmtPct, fmtDate, iconSVG, customSelect } from './utils.js';
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -146,14 +146,9 @@ export function renderCalendarPage() {
 
 function pageHead() {
   const accountOptions = [{ value: 'all', label: 'All accounts' }, ...data.accounts.map(a => ({ value: a.id, label: a.name }))];
-  const accountSelect = el('select', { class: 'filter-select dash-filter-select', onChange: (e) => {
-    state.accountId = e.target.value;
+  const accountSelect = customSelect(accountOptions, state.accountId, (v) => {
+    state.accountId = v;
     renderCalendarPage();
-  }});
-  accountOptions.forEach(o => {
-    const opt = el('option', { value: o.value }, o.label);
-    if (state.accountId === o.value) opt.selected = true;
-    accountSelect.appendChild(opt);
   });
 
   const monthLabel = `${MONTH_NAMES[state.month]} ${state.year}`;
