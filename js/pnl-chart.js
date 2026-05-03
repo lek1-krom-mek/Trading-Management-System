@@ -208,3 +208,164 @@ function buildChartSVG(points, opts = {}) {
 
   return svg;
 }
+
+let chartFilters = { range: 'all', accountId: 'all', strategyId: 'all' };
+
+function statBox(label, value, tone) {
+  return el('div', { class: 'pnl-stat' },
+    el('div', { class: 'pnl-stat-l' }, label),
+    el('div', { class: 'pnl-stat-v' + (tone ? ' ' + tone : '') }, value)
+  );
+}
+
+function statsStrip(stats) {
+  const pnlTone = stats.currentPnl >= 0 ? 'pos' : 'neg';
+  const wrTone = stats.winRate >= 50 ? 'pos' : 'neg';
+  const pfTone = stats.profitFactor >= 1 ? 'pos' : 'neg';
+
+  return el('div', { class: 'pnl-stats-strip' },
+    statBox('Current PnL', stats.totalTrades ? fmtMoney(stats.currentPnl, { dp: 0, sign: true }) : '—', stats.totalTrades ? pnlTone : ''),
+    statBox('ATH', stats.totalTrades ? fmtMoney(stats.ath, { dp: 0, sign: true }) : '—', 'gold'),
+    statBox('Max DD', stats.totalTrades ? fmtMoney(stats.maxDd, { dp: 0 }) : '—', stats.totalTrades ? 'neg' : ''),
+    statBox('Trades', stats.totalTrades ? String(stats.totalTrades) : '—', ''),
+    statBox('Win Rate', stats.totalTrades ? stats.winRate.toFixed(0) + '%' : '—', stats.totalTrades ? wrTone : ''),
+    statBox('Avg Win', stats.totalTrades && stats.avgWin ? fmtMoney(stats.avgWin, { dp: 0 }) : '—', 'pos'),
+    statBox('Avg Loss', stats.totalTrades && stats.avgLoss ? fmtMoney(stats.avgLoss, { dp: 0 }) : '—', 'neg'),
+    statBox('Profit Factor', stats.totalTrades ? stats.profitFactor.toFixed(2) : '—', stats.totalTrades ? pfTone : '')
+  );
+}
+
+function rangeRow(active, onChange) {
+  const ranges = [
+    { key: '7d', label: '7D' },
+    { key: '30d', label: '30D' },
+    { key: '90d', label: '90D' },
+    { key: 'ytd', label: 'YTD' },
+    { key: 'all', label: 'All' },
+  ];
+  return el('div', { class: 'pnl-range-row' },
+    ...ranges.map(r =>
+      el('button', {
+        class: 'pnl-range-btn' + (active === r.key ? ' active' : ''),
+        onClick: () => onChange(r.key),
+      }, r.label)
+    )
+  );
+}
+
+function filterRow(onChange) {
+  const accSelect = el('select', { onChange: (e) => onChange('accountId', e.target.value) });
+  accSelect.appendChild(el('option', { value: 'all' }, 'All accounts'));
+  data.accounts.forEach(a => {
+    const opt = el('option', { value: a.id }, a.name);
+    if (chartFilters.accountId === a.id) opt.selected = true;
+    accSelect.appendChild(opt);
+  });
+
+  const stratSelect = el('select', { onChange: (e) => onChange('strategyId', e.target.value) });
+  stratSelect.appendChild(el('option', { value: 'all' }, 'All strategies'));
+  data.strategies.forEach(s => {
+    const opt = el('option', { value: s.id }, s.name);
+    if (chartFilters.strategyId === s.id) opt.selected = true;
+    stratSelect.appendChild(opt);
+  });
+
+  return el('div', { class: 'pnl-filter-row' }, accSelect, stratSelect);
+}
+
+function attachCrosshair(wrap, svg) {
+  const crosshair = el('div', { class: 'pnl-crosshair' });
+  const dot = el('div', { class: 'pnl-dot' });
+  const tooltip = el('div', { class: 'pnl-tooltip' },
+    el('div', { class: 'pnl-tooltip-val' }),
+    el('div', { class: 'pnl-tooltip-date' })
+  );
+  wrap.appendChild(crosshair);
+  wrap.appendChild(dot);
+  wrap.appendChild(tooltip);
+
+  const show = (e) => {
+    const pts = JSON.parse(svg.dataset.points || '[]');
+    if (!pts.length) return;
+    const rect = svg.getBoundingClientRect();
+    const mx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    const scaleX = rect.width > 0 ? parseFloat(svg.getAttribute('viewBox').split(' ')[2]) / rect.width : 1;
+
+    let closest = 0;
+    let closestDist = Infinity;
+    for (let i = 0; i < pts.length; i++) {
+      const dist = Math.abs(pts[i].x - mx * scaleX);
+      if (dist < closestDist) { closestDist = dist; closest = i; }
+    }
+
+    const p = pts[closest];
+    const pxX = p.x / scaleX;
+    const pxY = p.y / scaleX;
+
+    crosshair.style.display = 'block';
+    crosshair.style.left = pxX + 'px';
+    crosshair.style.height = rect.height + 'px';
+
+    dot.style.display = 'block';
+    dot.style.left = pxX + 'px';
+    dot.style.top = pxY + 'px';
+
+    const sign = p.cumPnl >= 0 ? '+' : '';
+    tooltip.querySelector('.pnl-tooltip-val').textContent = sign + fmtMoney(p.cumPnl, { dp: 2 });
+    tooltip.querySelector('.pnl-tooltip-date').textContent = fmtDate(p.date);
+    tooltip.style.display = 'block';
+    const tipLeft = pxX + 16;
+    const tipTop = pxY - 20;
+    tooltip.style.left = (tipLeft + tooltip.offsetWidth > rect.width ? pxX - tooltip.offsetWidth - 12 : tipLeft) + 'px';
+    tooltip.style.top = Math.max(0, tipTop) + 'px';
+  };
+
+  const hide = () => {
+    crosshair.style.display = 'none';
+    dot.style.display = 'none';
+    tooltip.style.display = 'none';
+  };
+
+  svg.addEventListener('mousemove', show);
+  svg.addEventListener('mouseleave', hide);
+  svg.addEventListener('touchstart', show, { passive: true });
+  svg.addEventListener('touchend', hide);
+}
+
+function renderChart(container, heightOverride) {
+  container.innerHTML = '';
+  const { points, stats } = computePnlData(data.journals, chartFilters);
+
+  container.appendChild(statsStrip(stats));
+  container.appendChild(rangeRow(chartFilters.range, (key) => {
+    chartFilters.range = key;
+    renderChart(container, heightOverride);
+  }));
+  container.appendChild(filterRow((field, value) => {
+    chartFilters[field] = value;
+    renderChart(container, heightOverride);
+  }));
+
+  const wrap = el('div', { class: 'pnl-chart-wrap' });
+  const svg = buildChartSVG(points, { height: heightOverride || 280 });
+  wrap.appendChild(svg);
+  attachCrosshair(wrap, svg);
+  container.appendChild(wrap);
+}
+
+function openPnlOverlay() {}
+
+export function pnlChartSection() {
+  const content = el('div', { class: 'pnl-chart-content' });
+  const card = el('section', { class: 'card pnl-chart-card' + (!data.journals.length ? ' empty' : '') },
+    el('div', { class: 'pnl-chart-head' },
+      el('h2', {}, 'Cumulative PnL'),
+      el('button', { class: 'pnl-expand-btn', onClick: () => openPnlOverlay() },
+        el('span', { html: iconSVG('expand') }), ' Expand'
+      )
+    ),
+    content
+  );
+  renderChart(content);
+  return card;
+}

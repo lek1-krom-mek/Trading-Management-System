@@ -12,6 +12,7 @@ import { openStrategyForm } from './strategies.js';
 import { openJournalForm, openJournalDetail } from './journal.js';
 import { dashboardMiniCalendar } from './calendar.js';
 import { emptyState } from './accounts.js';
+import { pnlChartSection } from './pnl-chart.js';
 
 const dashFilters = { journalAccount: 'all' };
 
@@ -79,6 +80,9 @@ export function renderDashboardPage() {
   }
   root.appendChild(stratSection);
 
+  // ── Cumulative PnL chart ──
+  root.appendChild(pnlChartSection());
+
   // ── Journal trade history ──
   root.appendChild(journalHistorySection());
 
@@ -129,19 +133,19 @@ function doctrineFooter() {
       el('h2', { class: 'doctrine-title' }, 'The Manual & The Math')
     ),
     el('div', { class: 'doctrine-grid' },
-      el('a', { class: 'doctrine-card', href: 'blueprint.html', target: '_blank', rel: 'noopener' },
+      el('a', { class: 'doctrine-card', href: 'pages/blueprint.html', target: '_blank', rel: 'noopener' },
         el('div', { class: 'doctrine-card-mark' }, 'Manual · 01'),
         el('div', { class: 'doctrine-card-title' }, 'The Trading Manual'),
         el('div', { class: 'doctrine-card-body' }, 'Foundation, technical mastery, and the eight rules of ស្មារតីអង្គភាព.'),
         el('div', { class: 'doctrine-card-cta' }, 'Open blueprint →')
       ),
-      el('a', { class: 'doctrine-card', href: 'gold_risk_analysis.html', target: '_blank', rel: 'noopener' },
+      el('a', { class: 'doctrine-card', href: 'pages/gold_risk_analysis.html', target: '_blank', rel: 'noopener' },
         el('div', { class: 'doctrine-card-mark' }, 'Brief · 02'),
         el('div', { class: 'doctrine-card-title' }, 'Gold Risk & R:R Analysis'),
         el('div', { class: 'doctrine-card-body' }, 'Optimal risk per trade for XAU/USD on HolaPrime — Kelly, drawdown, and execution plan.'),
         el('div', { class: 'doctrine-card-cta' }, 'Open brief →')
       ),
-      el('a', { class: 'doctrine-card', href: 'risk_approach_comparison.html', target: '_blank', rel: 'noopener' },
+      el('a', { class: 'doctrine-card', href: 'pages/risk_approach_comparison.html', target: '_blank', rel: 'noopener' },
         el('div', { class: 'doctrine-card-mark' }, 'Study · 03'),
         el('div', { class: 'doctrine-card-title' }, 'Concentration vs Distribution'),
         el('div', { class: 'doctrine-card-body' }, 'One trade at 1% versus three trades at 0.33% — same daily exposure, different outcomes.'),
