@@ -1,0 +1,252 @@
+/* ── PnL Chart Card ──────────────────────────────────── */
+
+.pnl-chart-card {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 32px;
+  transition: border-color 0.2s var(--ease);
+}
+.pnl-chart-card:hover {
+  border-color: rgba(249,168,37,0.3);
+}
+
+.pnl-chart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.pnl-chart-head h2 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.pnl-expand-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px 10px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s var(--ease);
+}
+.pnl-expand-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* ── Stats Strip ─────────────────────────────────────── */
+
+.pnl-stats-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.pnl-stat {
+  text-align: center;
+  padding: 6px 4px;
+  background: rgba(255,255,255,0.02);
+  border-radius: 8px;
+}
+.pnl-stat-l {
+  font-size: 10px;
+  color: rgba(255,255,255,0.45);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.pnl-stat-v {
+  font-size: 16px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin: 2px 0;
+  color: var(--text);
+}
+.pnl-stat-v.pos { color: #10B981; }
+.pnl-stat-v.neg { color: #EF4444; }
+.pnl-stat-v.gold { color: #F59E0B; }
+
+/* ── Time Range Buttons ──────────────────────────────── */
+
+.pnl-range-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.pnl-range-btn {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: all 0.15s var(--ease);
+  letter-spacing: 0.04em;
+}
+.pnl-range-btn:hover {
+  border-color: rgba(245,158,11,0.4);
+  color: var(--text);
+}
+.pnl-range-btn.active {
+  background: rgba(245,158,11,0.12);
+  border-color: rgba(245,158,11,0.5);
+  color: #FDE68A;
+}
+
+/* ── Filter Row ──────────────────────────────────────── */
+
+.pnl-filter-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.pnl-filter-row select {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 12px;
+  padding: 4px 10px;
+  max-width: 180px;
+}
+.pnl-filter-row select:focus {
+  outline: none;
+  border-color: rgba(245,158,11,0.5);
+}
+
+/* ── Chart Container ─────────────────────────────────── */
+
+.pnl-chart-wrap {
+  position: relative;
+  width: 100%;
+}
+.pnl-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ── Crosshair Tooltip ───────────────────────────────── */
+
+.pnl-crosshair {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  border-left: 1px dashed rgba(245,158,11,0.5);
+  pointer-events: none;
+  display: none;
+}
+.pnl-dot {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 2px solid #F59E0B;
+  border-radius: 50%;
+  background: rgba(7,9,15,0.9);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  display: none;
+}
+.pnl-tooltip {
+  position: absolute;
+  background: rgba(15,20,30,0.95);
+  border: 1px solid rgba(245,158,11,0.3);
+  border-radius: 8px;
+  padding: 6px 12px;
+  pointer-events: none;
+  display: none;
+  white-space: nowrap;
+  z-index: 10;
+}
+.pnl-tooltip-val {
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  color: #F59E0B;
+}
+.pnl-tooltip-date {
+  font-size: 10px;
+  color: rgba(255,255,255,0.4);
+  font-family: var(--font-mono, monospace);
+  margin-top: 1px;
+}
+
+/* ── Full-Screen Overlay ─────────────────────────────── */
+
+.pnl-chart-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(7,9,15,0.95);
+  display: flex;
+  flex-direction: column;
+  padding: 32px;
+  overflow-y: auto;
+}
+.pnl-overlay-close {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 6px 12px;
+  font-size: 13px;
+  transition: all 0.2s var(--ease);
+}
+.pnl-overlay-close:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+.pnl-overlay-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 16px;
+}
+
+/* ── Empty State ─────────────────────────────────────── */
+
+.pnl-chart-card.empty {
+  opacity: 0.6;
+}
+
+/* ── Responsive ──────────────────────────────────────── */
+
+@media (max-width: 860px) {
+  .pnl-stats-strip {
+    display: flex;
+    overflow-x: auto;
+    gap: 10px;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .pnl-stats-strip::-webkit-scrollbar { display: none; }
+  .pnl-stat {
+    flex: 0 0 auto;
+    min-width: 90px;
+  }
+  .pnl-filter-row {
+    flex-direction: column;
+  }
+  .pnl-filter-row select {
+    max-width: 100%;
+  }
+  .pnl-chart-overlay {
+    padding: 16px;
+  }
+}

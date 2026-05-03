@@ -16,7 +16,9 @@
 <link rel="stylesheet" href="css/sop-checklist.css">
 <link rel="stylesheet" href="css/daily-cap-band.css">
 <link rel="stylesheet" href="css/calendar.css">
+<link rel="stylesheet" href="css/pnl-chart.css">
 <link rel="stylesheet" href="css/forms.css">
+<link rel="stylesheet" href="css/data-manager.css">
 </head>
 <body>
 
@@ -191,6 +193,12 @@
         <h1>Trading OS</h1>
         <div class="brand-sub">Management System</div>
       </div>
+      <button class="sidebar-collapse-btn" id="sidebar-collapse" type="button" title="Collapse sidebar" aria-label="Toggle sidebar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 19l-7-7 7-7"/><path d="M18 19l-7-7 7-7" opacity="0.4"/></svg>
+      </button>
+      <button class="sidebar-close-btn" id="sidebar-close" type="button" aria-label="Close menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
     </div>
 
     <div class="sidebar-account" id="sidebar-account">
@@ -236,6 +244,15 @@
     <button class="sidebar-add" id="sidebar-add" type="button">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
       <span id="sidebar-add-label">Add New</span>
+    </button>
+
+    <button id="sidebar-data" class="nav-item" title="Data Management">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <ellipse cx="12" cy="5" rx="9" ry="3"/>
+        <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+        <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+      </svg>
+      <span>Data</span>
     </button>
 
     <div class="sidebar-footer">
