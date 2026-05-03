@@ -112,18 +112,105 @@
   gap: 8px;
   margin-bottom: 14px;
 }
-.pnl-filter-row select {
+
+/* ── Custom Select Dropdown ──────────────────────────── */
+
+.pnl-select {
+  position: relative;
+  min-width: 160px;
+  max-width: 240px;
+  user-select: none;
+  outline: none;
+}
+.pnl-select-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   background: rgba(255,255,255,0.04);
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   color: var(--text);
   font-size: 12px;
-  padding: 4px 10px;
-  max-width: 180px;
+  font-weight: 500;
+  padding: 7px 12px;
+  cursor: pointer;
+  transition: all 0.15s var(--ease);
 }
-.pnl-filter-row select:focus {
-  outline: none;
+.pnl-select-label:hover {
+  border-color: rgba(245,158,11,0.4);
+  background: rgba(255,255,255,0.06);
+}
+.pnl-select.open .pnl-select-label {
   border-color: rgba(245,158,11,0.5);
+  background: rgba(255,255,255,0.06);
+}
+.pnl-select:focus-visible .pnl-select-label {
+  outline: 2px solid rgba(245,158,11,0.5);
+  outline-offset: 2px;
+}
+.pnl-select-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pnl-select-arrow {
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+  transition: transform 0.2s var(--ease);
+  flex-shrink: 0;
+}
+.pnl-select.open .pnl-select-arrow {
+  transform: rotate(180deg);
+  color: #F59E0B;
+}
+.pnl-select-list {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  min-width: 100%;
+  width: max-content;
+  max-width: 300px;
+  max-height: 240px;
+  overflow-y: auto;
+  background: rgba(12,16,24,0.98);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 4px;
+  z-index: 50;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+.pnl-select-list::-webkit-scrollbar { width: 4px; }
+.pnl-select-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+.pnl-select.open .pnl-select-list {
+  display: block;
+}
+.pnl-select-item {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.7);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.12s var(--ease);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pnl-select-item:hover {
+  background: rgba(255,255,255,0.06);
+  color: var(--text);
+}
+.pnl-select-item.active {
+  background: rgba(245,158,11,0.12);
+  color: #FDE68A;
+  font-weight: 600;
 }
 
 /* ── Chart Container ─────────────────────────────────── */
@@ -243,7 +330,7 @@
   .pnl-filter-row {
     flex-direction: column;
   }
-  .pnl-filter-row select {
+  .pnl-select {
     max-width: 100%;
   }
   .pnl-chart-overlay {

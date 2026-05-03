@@ -241,24 +241,60 @@ function rangeRow(active, onChange) {
   );
 }
 
+function customSelect(options, activeValue, onSelect) {
+  let open = false;
+  const activeOpt = options.find(o => o.value === activeValue) || options[0];
+
+  const label = el('div', { class: 'pnl-select-label' },
+    el('span', { class: 'pnl-select-text' }, activeOpt.label),
+    el('span', { class: 'pnl-select-arrow', html: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' })
+  );
+
+  const list = el('div', { class: 'pnl-select-list' });
+  options.forEach(o => {
+    const item = el('div', {
+      class: 'pnl-select-item' + (o.value === activeValue ? ' active' : ''),
+      onClick: (e) => {
+        e.stopPropagation();
+        onSelect(o.value);
+        close();
+      },
+    }, o.label);
+    list.appendChild(item);
+  });
+
+  const wrap = el('div', { class: 'pnl-select', tabindex: '0' }, label, list);
+
+  function toggle() { open ? close() : openMenu(); }
+  function openMenu() {
+    open = true;
+    wrap.classList.add('open');
+    document.addEventListener('click', outsideClick, true);
+  }
+  function close() {
+    open = false;
+    wrap.classList.remove('open');
+    document.removeEventListener('click', outsideClick, true);
+  }
+  function outsideClick(e) { if (!wrap.contains(e.target)) close(); }
+
+  label.addEventListener('click', (e) => { e.stopPropagation(); toggle(); });
+  wrap.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') close();
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+  });
+
+  return wrap;
+}
+
 function filterRow(onChange) {
-  const accSelect = el('select', { onChange: (e) => onChange('accountId', e.target.value) });
-  accSelect.appendChild(el('option', { value: 'all' }, 'All accounts'));
-  data.accounts.forEach(a => {
-    const opt = el('option', { value: a.id }, a.name);
-    if (chartFilters.accountId === a.id) opt.selected = true;
-    accSelect.appendChild(opt);
-  });
+  const accOptions = [{ value: 'all', label: 'All accounts' }, ...data.accounts.map(a => ({ value: a.id, label: a.name }))];
+  const stratOptions = [{ value: 'all', label: 'All strategies' }, ...data.strategies.map(s => ({ value: s.id, label: s.name }))];
 
-  const stratSelect = el('select', { onChange: (e) => onChange('strategyId', e.target.value) });
-  stratSelect.appendChild(el('option', { value: 'all' }, 'All strategies'));
-  data.strategies.forEach(s => {
-    const opt = el('option', { value: s.id }, s.name);
-    if (chartFilters.strategyId === s.id) opt.selected = true;
-    stratSelect.appendChild(opt);
-  });
-
-  return el('div', { class: 'pnl-filter-row' }, accSelect, stratSelect);
+  return el('div', { class: 'pnl-filter-row' },
+    customSelect(accOptions, chartFilters.accountId, (v) => onChange('accountId', v)),
+    customSelect(stratOptions, chartFilters.strategyId, (v) => onChange('strategyId', v))
+  );
 }
 
 function attachCrosshair(wrap, svg) {
