@@ -213,11 +213,13 @@ Then restart the server (`Ctrl+C`, then `npm start` again). Your data is safe �
 
 ---
 
-## Run automatically on startup (optional)
+## Run automatically on startup (recommended for everyday use)
 
 If you don't want to open a terminal every time you reboot your computer, you can have the TMS server start itself in the background. The easiest way is **PM2** — a small tool that keeps Node.js apps running, restarts them if they crash, and re-launches them after a reboot.
 
 This works on **Windows, macOS, and Linux** with the same three commands.
+
+> **You can skip Step 4 (`npm start`) above and use PM2 from day one** — PM2 starts the server for you, so you don't need to run it manually first. Already running it with `npm start`? Stop it with **Ctrl+C** in that terminal before doing the PM2 setup below.
 
 ### One-time setup
 
@@ -288,8 +290,6 @@ git pull
 npm install
 pm2 restart tms
 ```
-
-> **Heads up:** if you previously ran the server manually with `npm start` and then set up PM2, kill the old terminal first. Two copies fighting over port 3000 will misbehave. Check with `pm2 list` and a fresh look at http://localhost:3000.
 
 ---
 
