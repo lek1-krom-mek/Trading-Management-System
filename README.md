@@ -385,12 +385,10 @@ You need to run the server (`cd server && npm start`) and open **http://localhos
 
 ## Contributing
 
-Pull requests welcome! This is a personal trading tool I'm sharing in case it's useful to others. If you find bugs or want a feature:
+Pull requests welcome! This is a personal trading tool I'm sharing in case it's useful to others.
 
-1. Fork the repo
-2. Create a branch (`git checkout -b my-feature`)
-3. Commit your changes
-4. Open a Pull Request
+- **Read [CONTRIBUTING.md](CONTRIBUTING.md)** for the practical workflow: dev setup, branch/commit conventions, the "things that look easy but will break stuff" list, and the PR process.
+- **Read [ARCHITECTURE.md](ARCHITECTURE.md)** to understand how the codebase is put together (storage flow, routing, screenshot invariants, schema). It's the recommended first read before touching code.
 
 Please keep the spirit of the project: **no build step, no framework lock-in, no telemetry, data stays local.**
 
