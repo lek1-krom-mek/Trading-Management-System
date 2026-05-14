@@ -301,8 +301,6 @@ You need to run the server (`cd server && npm start`) and open **http://localhos
 - **Routing:** simple hash router (`#dashboard`, `#accounts`, etc.)
 - **No telemetry, no analytics, no external dependencies at runtime in browser-only mode**
 
-For architecture details see [`.claude/CLAUDE.md`](.claude/CLAUDE.md).
-
 ---
 
 ## Contributing
