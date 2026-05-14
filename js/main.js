@@ -38,7 +38,7 @@ register('doctrine',    (param) => {
   if (param === 'checklist') renderDoctrineChecklistPage();
   else go('dashboard');
 });
-register('calculator',  () => { renderCalcMeta(); });
+register('calculator',  () => { syncCalcWithActiveAccount(); renderCalcMeta(); });
 
 function renderCalcMeta() {
   const sub = document.getElementById('calc-page-sub');
@@ -127,8 +127,6 @@ function bindInputs() {
   ['tb1','tb2','tb3'].forEach((id, i) =>
     document.getElementById(id).addEventListener('click', () => setTrades(i + 1))
   );
-
-  document.getElementById('calc-sync-btn').addEventListener('click', syncCalcWithActiveAccount);
 }
 
 function syncCalcWithActiveAccount() {

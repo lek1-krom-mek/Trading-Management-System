@@ -116,7 +116,7 @@ export function render() {
 // ── Restore UI controls from saved state ─────────────────
 
 export function restoreControls() {
-  el('balance-input').value  = state.balance;
+  el('balance-input').value  = Math.round(state.balance * 100) / 100;
   el('daily-input').value    = state.dailyPct;
   el('maxloss-input').value  = state.maxlossPct;
   el('target-input').value   = state.targetPct;
