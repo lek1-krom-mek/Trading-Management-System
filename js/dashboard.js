@@ -4,7 +4,6 @@
 
 import { data, strategyStats, setActiveAccount, journalStrategyIds, journalHasStrategy } from './store.js';
 import { el, ACCOUNT_TYPES, ACCOUNT_STATUSES, initials, fmtMoney, fmtPct, fmtDate, fmtRelative, iconSVG, sparkline, equityCurve, customSelect } from './utils.js';
-import { winRateByGrade, disciplineViolations, skipRatio } from './discipline.js';
 import { dailyCapBand } from './daily-cap-band.js';
 import { go } from './router.js';
 import { openAccountForm } from './accounts.js';
@@ -89,33 +88,8 @@ export function renderDashboardPage() {
   // ── Mini PnL calendar (current month) ──
   root.appendChild(dashboardMiniCalendar(dashFilters.journalAccount));
 
-  // ── Discipline mini-widget ──
-  root.appendChild(disciplineWidget());
-
   // ── Doctrine links + copyright ──
   root.appendChild(doctrineFooter());
-}
-
-function disciplineWidget() {
-  const wr = winRateByGrade(data.plans, data.journals);
-  const dv = disciplineViolations(data.plans, data.journals);
-  const sr = skipRatio(data.plans, 30);
-
-  return el('section', {
-    class: 'card discipline-widget',
-    onClick: () => go('plans'),
-    style: { cursor: 'pointer', marginTop: '16px' },
-  },
-    el('div', { class: 'card-head' },
-      el('h3', {}, 'Discipline'),
-      el('span', { class: 'card-sub' }, 'Click to open Trade Plans →'),
-    ),
-    el('div', { class: 'discipline-widget-row' },
-      miniStat('A win rate', wr.A.winRate.toFixed(0) + '%', wr.A.wins + 'W / ' + wr.A.losses + 'L'),
-      miniStat('Skip ratio (30d)', sr.ratio ? (sr.ratio * 100).toFixed(0) + '%' : '—', sr.skipped + ' skipped'),
-      miniStat('Violations', dv.count.toString(), '$' + dv.total.toFixed(0)),
-    ),
-  );
 }
 
 function miniStat(label, value, hint) {
@@ -151,12 +125,12 @@ function doctrineFooter() {
         el('div', { class: 'doctrine-card-body' }, 'One trade at 1% versus three trades at 0.33% — same daily exposure, different outcomes.'),
         el('div', { class: 'doctrine-card-cta' }, 'Open study →')
       ),
-      el('a', { class: 'doctrine-card', href: '#doctrine/checklist' },
-        el('div', { class: 'doctrine-card-mark' }, 'Checklist · 04'),
-        el('div', { class: 'doctrine-card-title' }, 'Global Discipline Checklist'),
-        el('div', { class: 'doctrine-card-body' }, 'Must-pass checks that apply to every Trade Plan — deal-breakers that auto-grade a plan SKIP when unticked.'),
-        el('div', { class: 'doctrine-card-cta' }, 'Edit checklist →')
-      )
+      el('a', { class: 'doctrine-card', href: '#sniper' },
+        el('div', { class: 'doctrine-card-mark' }, 'Playbook · 04'),
+        el('div', { class: 'doctrine-card-title' }, 'Orderflow Sniper Entry Model'),
+        el('div', { class: 'doctrine-card-body' }, 'XAUUSD order-flow checklist — six layers, A+/A/B/SKIP tiering, and the no-trade filters.'),
+        el('div', { class: 'doctrine-card-cta' }, 'Open playbook →')
+      ),
     ),
     el('div', { class: 'doctrine-copy' },
       `© ${new Date().getFullYear()} Chhaynee Seak · Tyche Capital — Trading Management System`

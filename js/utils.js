@@ -72,6 +72,7 @@ export const ACCOUNT_TYPES = {
   'prop-instant':   { label: 'Prop Instant',   color: '#60A5FA',      bg: 'rgba(96,165,250,0.14)',  fg: '#93C5FD' },
   'own-funds':      { label: 'Own Funds',      color: '#4ADE80',      bg: 'rgba(74,222,128,0.14)',  fg: '#86EFAC' },
   'ea-robot':       { label: 'EA Robot',       color: '#A78BFA',      bg: 'rgba(167,139,250,0.16)', fg: '#C4B5FD' },
+  'backtest':       { label: 'Backtest',       color: '#06B6D4',      bg: 'rgba(6,182,212,0.14)',   fg: '#67E8F9' },
 };
 
 export const ACCOUNT_STATUSES = {
@@ -144,11 +145,211 @@ export function toast(msg, kind = '') {
   toastTimer = setTimeout(() => t.classList.remove('show'), 2400);
 }
 
-/** Confirm dialog promise */
+/**
+ * In-app confirm dialog — replaces the native browser confirm().
+ * Returns Promise<boolean>. Safe defaults: Escape / overlay click / Cancel → false.
+ * For destructive actions pass `danger: true` (red CTA + autofocus on Cancel).
+ */
+export function confirmDialog({
+  title = 'Are you sure?',
+  message = '',
+  confirmLabel = 'Confirm',
+  cancelLabel = 'Cancel',
+  danger = false,
+} = {}) {
+  return new Promise((resolve) => {
+    let settled = false;
+    function settle(result) {
+      if (settled) return;
+      settled = true;
+      overlay.classList.remove('open');
+      panel.classList.remove('open');
+      document.removeEventListener('keydown', onKey, true);
+      document.body.style.overflow = prevOverflow;
+      setTimeout(() => {
+        overlay.remove();
+        if (prevFocus && typeof prevFocus.focus === 'function') prevFocus.focus();
+        resolve(result);
+      }, 180);
+    }
+
+    const titleEl   = el('h3', { class: 'cd-title' }, title);
+    const messageEl = message ? el('p', { class: 'cd-message' }, message) : null;
+
+    const cancelBtn = el('button', { type: 'button', class: 'cd-btn cd-btn-ghost' }, cancelLabel);
+    cancelBtn.addEventListener('click', () => settle(false));
+
+    const confirmBtn = el('button', {
+      type: 'button',
+      class: 'cd-btn ' + (danger ? 'cd-btn-danger' : 'cd-btn-primary'),
+    }, confirmLabel);
+    confirmBtn.addEventListener('click', () => settle(true));
+
+    const panel = el('div', {
+      class: 'cd-panel',
+      role: 'alertdialog',
+      'aria-modal': 'true',
+    },
+      titleEl,
+      messageEl,
+      el('div', { class: 'cd-actions' }, cancelBtn, confirmBtn),
+    );
+
+    const overlay = el('div', { class: 'cd-overlay' }, panel);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) settle(false); });
+
+    const prevFocus = document.activeElement;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const onKey = (e) => {
+      if (e.key === 'Escape')    { e.preventDefault(); settle(false); }
+      else if (e.key === 'Enter' && !danger) { e.preventDefault(); settle(true); }
+    };
+    document.addEventListener('keydown', onKey, true);
+
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => {
+      overlay.classList.add('open');
+      panel.classList.add('open');
+      (danger ? cancelBtn : confirmBtn).focus();
+    });
+  });
+}
+
+/** Back-compat wrapper — delegates to confirmDialog. */
 export function confirmAction(message) {
-  return new Promise(resolve => {
-    const ok = confirm(message);
-    resolve(ok);
+  return confirmDialog({ message });
+}
+
+/**
+ * Fullscreen image lightbox with zoom (wheel + buttons + double-click) and drag-pan.
+ * Close: ESC, backdrop click, or × button.
+ */
+export function imageLightbox(src, alt = '') {
+  if (!src) return Promise.resolve();
+  return new Promise((resolve) => {
+    let scale = 1;
+    let panX = 0, panY = 0;
+    let dragging = false;
+    let dragStart = null;
+    const MIN_SCALE = 1;
+    const MAX_SCALE = 8;
+
+    const img = el('img', { class: 'lb-image', src, alt, draggable: 'false' });
+    function applyTransform() {
+      img.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+      img.classList.toggle('lb-zoomed', scale > 1);
+    }
+
+    const setScale = (next, anchorX = null, anchorY = null) => {
+      const clamped = Math.max(MIN_SCALE, Math.min(MAX_SCALE, next));
+      if (clamped === scale) return;
+      if (clamped === 1) { panX = 0; panY = 0; }
+      else if (anchorX != null && anchorY != null) {
+        const r = img.getBoundingClientRect();
+        const cx = r.left + r.width / 2;
+        const cy = r.top + r.height / 2;
+        const dx = anchorX - cx;
+        const dy = anchorY - cy;
+        const factor = clamped / scale - 1;
+        panX -= dx * factor;
+        panY -= dy * factor;
+      }
+      scale = clamped;
+      applyTransform();
+      if (pctEl) pctEl.textContent = Math.round(scale * 100) + '%';
+    };
+
+    const reset = () => { scale = 1; panX = 0; panY = 0; applyTransform(); if (pctEl) pctEl.textContent = '100%'; };
+    const zoomIn  = (ax, ay) => setScale(scale * 1.4, ax, ay);
+    const zoomOut = (ax, ay) => setScale(scale / 1.4, ax, ay);
+    let pctEl;
+
+    img.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      (e.deltaY < 0 ? zoomIn : zoomOut)(e.clientX, e.clientY);
+    }, { passive: false });
+
+    img.addEventListener('dblclick', (e) => {
+      e.preventDefault();
+      if (scale > 1) reset();
+      else setScale(2.5, e.clientX, e.clientY);
+    });
+
+    img.addEventListener('mousedown', (e) => {
+      if (scale <= 1) return;
+      dragging = true;
+      dragStart = { x: e.clientX - panX, y: e.clientY - panY };
+      img.classList.add('lb-dragging');
+      e.preventDefault();
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!dragging) return;
+      panX = e.clientX - dragStart.x;
+      panY = e.clientY - dragStart.y;
+      applyTransform();
+    });
+    window.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      dragging = false;
+      img.classList.remove('lb-dragging');
+    });
+
+    // Toolbar (zoom out · % · zoom in · reset · close)
+    pctEl = el('span', { class: 'lb-pct' }, '100%');
+    const btnOut   = el('button', { class: 'lb-btn', type: 'button', 'aria-label': 'Zoom out' }, '−');
+    const btnIn    = el('button', { class: 'lb-btn', type: 'button', 'aria-label': 'Zoom in'  }, '+');
+    const btnReset = el('button', { class: 'lb-btn lb-btn-reset', type: 'button', 'aria-label': 'Reset zoom' }, 'Reset');
+    const btnClose = el('button', { class: 'lb-btn lb-btn-close', type: 'button', 'aria-label': 'Close' },
+      el('span', { html: '<svg width="16" height="16" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>' })
+    );
+    btnOut.addEventListener('click',   () => zoomOut(window.innerWidth/2, window.innerHeight/2));
+    btnIn.addEventListener('click',    () => zoomIn(window.innerWidth/2, window.innerHeight/2));
+    btnReset.addEventListener('click', () => reset());
+    btnClose.addEventListener('click', () => close());
+
+    const toolbar = el('div', { class: 'lb-toolbar', onClick: (e) => e.stopPropagation() },
+      btnOut, pctEl, btnIn, btnReset, btnClose,
+    );
+
+    const stage = el('div', { class: 'lb-stage' }, img);
+    stage.addEventListener('click', (e) => { if (e.target === stage) close(); });
+
+    const overlay = el('div', { class: 'lb-overlay', role: 'dialog', 'aria-modal': 'true', 'aria-label': alt || 'Image viewer' },
+      stage,
+      toolbar,
+    );
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
+
+    const prevFocus = document.activeElement;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    function onKey(e) {
+      if (e.key === 'Escape') { e.preventDefault(); close(); }
+      else if (e.key === '+' || e.key === '=') { e.preventDefault(); zoomIn(window.innerWidth/2, window.innerHeight/2); }
+      else if (e.key === '-' || e.key === '_') { e.preventDefault(); zoomOut(window.innerWidth/2, window.innerHeight/2); }
+      else if (e.key === '0')                   { e.preventDefault(); reset(); }
+    }
+    document.addEventListener('keydown', onKey, true);
+
+    function close() {
+      document.removeEventListener('keydown', onKey, true);
+      overlay.classList.remove('open');
+      document.body.style.overflow = prevOverflow;
+      setTimeout(() => {
+        overlay.remove();
+        if (prevFocus && typeof prevFocus.focus === 'function') prevFocus.focus();
+        resolve();
+      }, 180);
+    }
+
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => {
+      overlay.classList.add('open');
+      btnClose.focus();
+    });
   });
 }
 
@@ -181,36 +382,84 @@ const CHEVRON_SVG = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none"
 
 export function customSelect(options, activeValue, onSelect) {
   let open = false;
+  let currentValue = activeValue;
   const activeOpt = options.find(o => o.value === activeValue) || options[0];
 
+  const labelText = el('span', { class: 'pnl-select-text' }, activeOpt.label);
   const label = el('div', { class: 'pnl-select-label' },
-    el('span', { class: 'pnl-select-text' }, activeOpt.label),
+    labelText,
     el('span', { class: 'pnl-select-arrow', html: CHEVRON_SVG })
   );
 
-  const list = el('div', { class: 'pnl-select-list' });
+  // Dropdown list is portaled to document.body when opened, so it escapes any
+  // ancestor `overflow:hidden|auto` clip (e.g. the form modal's scrollable body)
+  // and any stacking-context trap.
+  const list = el('div', { class: 'pnl-select-list pnl-select-list--portal' });
+  const itemEls = new Map();
   options.forEach(o => {
     const item = el('div', {
       class: 'pnl-select-item' + (o.value === activeValue ? ' active' : ''),
-      onClick: (e) => { e.stopPropagation(); onSelect(o.value); close(); },
+      onClick: (e) => {
+        e.stopPropagation();
+        // Update visible label + active highlight before notifying the caller
+        currentValue = o.value;
+        labelText.textContent = o.label;
+        itemEls.forEach((node, val) => node.classList.toggle('active', val === o.value));
+        onSelect(o.value);
+        close();
+      },
     }, o.label);
+    itemEls.set(o.value, item);
     list.appendChild(item);
   });
 
-  const wrap = el('div', { class: 'pnl-select', tabindex: '0' }, label, list);
+  const wrap = el('div', { class: 'pnl-select', tabindex: '0' }, label);
+
+  function positionList() {
+    const r = label.getBoundingClientRect();
+    const vh = window.innerHeight;
+    const listHeight = Math.min(list.scrollHeight || 240, 240);
+    const spaceBelow = vh - r.bottom;
+    const openUp = spaceBelow < listHeight + 16 && r.top > listHeight + 16;
+    list.style.position = 'fixed';
+    list.style.left = r.left + 'px';
+    list.style.right = 'auto';                  // override base CSS `right: 0` stretch
+    list.style.minWidth = r.width + 'px';
+    list.style.width = 'max-content';
+    if (openUp) {
+      list.style.top = 'auto';
+      list.style.bottom = (vh - r.top + 4) + 'px';
+    } else {
+      list.style.bottom = 'auto';
+      list.style.top = (r.bottom + 4) + 'px';
+    }
+  }
 
   function toggle() { open ? close() : openMenu(); }
+
   function openMenu() {
+    if (open) return;
     open = true;
     wrap.classList.add('open');
+    document.body.appendChild(list);
+    positionList();
     document.addEventListener('click', outsideClick, true);
+    window.addEventListener('scroll',  onViewportShift, true);
+    window.addEventListener('resize',  onViewportShift, true);
   }
   function close() {
+    if (!open) return;
     open = false;
     wrap.classList.remove('open');
+    if (list.parentNode) list.parentNode.removeChild(list);
     document.removeEventListener('click', outsideClick, true);
+    window.removeEventListener('scroll',  onViewportShift, true);
+    window.removeEventListener('resize',  onViewportShift, true);
   }
-  function outsideClick(e) { if (!wrap.contains(e.target)) close(); }
+  function outsideClick(e) {
+    if (!wrap.contains(e.target) && !list.contains(e.target)) close();
+  }
+  function onViewportShift() { if (open) positionList(); }
 
   label.addEventListener('click', (e) => { e.stopPropagation(); toggle(); });
   wrap.addEventListener('keydown', (e) => {

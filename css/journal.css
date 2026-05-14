@@ -9,6 +9,8 @@
   padding: 12px 14px;
   margin-bottom: 16px;
   backdrop-filter: blur(14px);
+  position: relative;
+  z-index: 50;
 }
 .filter-field {
   display: flex; flex-direction: column; gap: 3px;
@@ -156,11 +158,36 @@
 .bt-detail-title { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
 .bt-detail-sub { font-size: 11.5px; color: var(--hint); margin-top: 4px; letter-spacing: 0.04em; font-variant-numeric: tabular-nums; }
 .bt-detail-actions { display: flex; gap: 6px; }
+.bt-detail-images {
+  background: rgba(0,0,0,0.4);
+  border-bottom: 1px solid var(--border);
+  padding: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+}
 .bt-detail-image {
   background: rgba(0,0,0,0.4);
   border-bottom: 1px solid var(--border);
   padding: 20px;
-  display: flex; justify-content: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+.bt-detail-images .bt-detail-image {
+  background: transparent;
+  border-bottom: none;
+  padding: 0;
+}
+.bt-detail-image-cap {
+  font-family: 'JetBrains Mono', monospace, ui-monospace;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--hint);
+  align-self: flex-start;
 }
 .bt-detail-image img {
   max-width: 100%;
@@ -170,17 +197,16 @@
 }
 .bt-detail-image.empty {
   aspect-ratio: 16 / 9;
-  align-items: center;
+  justify-content: center;
   color: var(--hint);
 }
 .bt-detail-meta {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
   gap: 10px;
   padding: 18px 24px;
   border-bottom: 1px solid var(--border);
 }
-@media (max-width: 700px) { .bt-detail-meta { grid-template-columns: repeat(2, 1fr); } }
 
 .meta-pill {
   background: var(--surface);
@@ -193,6 +219,9 @@
 .meta-pill.result.win .meta-pill-v { color: var(--green); }
 .meta-pill.result.loss .meta-pill-v { color: var(--red); }
 .meta-pill.result.be .meta-pill-v { color: var(--muted); }
+.meta-pill.amount.win .meta-pill-v { color: var(--green); }
+.meta-pill.amount.loss .meta-pill-v { color: var(--red); }
+.meta-pill.amount.be .meta-pill-v { color: var(--muted); }
 .bt-detail-body { padding: 20px 24px 24px; }
 .bt-detail-body h4 {
   font-size: 11px; color: var(--hint);

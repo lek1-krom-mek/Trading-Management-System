@@ -50,6 +50,9 @@ body.light {
 }
 
 /* ── Body ────────────────────────────────────────────── */
+html {
+  overflow-x: hidden;
+}
 body {
   background: var(--bg);
   color: var(--text);
@@ -58,7 +61,6 @@ body {
   line-height: 1.6;
   min-height: 100dvh;
   padding: 44px 20px 72px;
-  overflow-x: hidden;
   transition: background 0.35s var(--ease), color 0.35s var(--ease);
 }
 

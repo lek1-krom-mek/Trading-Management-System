@@ -7,6 +7,7 @@ import { checklistEditor } from './checklist.js';
 import { openFormPanel, field, textInput, numberInput, textArea, multiChips, colorPicker, readForm } from './forms.js';
 import { el, ENTRY_METHODS, TIMEFRAMES, INSTRUMENTS, STRATEGY_COLORS, iconSVG, toast, fmtPct, fmtDate, sparkline, equityCurve, initials } from './utils.js';
 import { emptyState } from './accounts.js';
+import { openJournalDetail } from './journal.js';
 import { go } from './router.js';
 
 export function renderStrategiesPage() {
@@ -162,7 +163,7 @@ export function renderStrategyDetail(id) {
   if (bts.length) {
     const thumbs = el('div', { class: 'bt-thumb-grid' });
     bts.slice(0, 8).forEach(b => {
-      thumbs.appendChild(el('div', { class: 'bt-thumb', onClick: () => go('journal'), style: b.screenshotPath ? { backgroundImage: `url(${b.screenshotPath})` } : {} },
+      thumbs.appendChild(el('div', { class: 'bt-thumb', onClick: () => openJournalDetail(b), style: (b.screenshotPathUrl || b.screenshotPath) ? { backgroundImage: `url(${b.screenshotPathUrl || b.screenshotPath})` } : {} },
         el('div', { class: 'bt-thumb-label' },
           el('span', { class: 'bt-result ' + b.result }, b.result?.toUpperCase()),
           el('span', {}, b.rAchieved ? b.rAchieved + 'R' : '')
@@ -216,6 +217,7 @@ export function openStrategyForm(existing = null) {
   openFormPanel({
     title: existing ? 'Edit strategy' : 'New strategy',
     body,
+    width: 640,
     submitLabel: existing ? 'Save changes' : 'Create strategy',
     onDelete: existing ? async () => { await deleteStrategy(existing.id); toast('Strategy deleted'); go('strategies'); } : null,
     onSubmit: async (form) => {

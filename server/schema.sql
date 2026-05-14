@@ -48,7 +48,8 @@ CREATE TABLE IF NOT EXISTS journals (
   result           TEXT,        -- win | loss | be
   r_achieved       REAL,
   amount           REAL,        -- dollar P&L magnitude (always positive, sign derived from result)
-  screenshot_path  TEXT,        -- e.g. /uploads/bt-xxx.png
+  screenshot_path  TEXT,        -- entry screenshot, e.g. /uploads/bt-xxx.png
+  exit_screenshot_path TEXT,    -- TP / SL hit screenshot (optional)
   description      TEXT,
   tags             TEXT,        -- JSON array
   sop_checks       TEXT,        -- JSON: { rule_1: { confirmed, note }, ... }

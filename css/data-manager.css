@@ -1,0 +1,9 @@
+.data-manager { padding: 0.5rem 0; }
+.dm-section { margin-bottom: 1.5rem; }
+.dm-section h4 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted, #999); margin-bottom: 0.5rem; }
+.dm-mode-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 4px; font-size: 0.85rem; font-weight: 600; }
+.dm-mode-badge.http { background: rgba(16,185,129,0.15); color: #10B981; }
+.dm-mode-badge.idb { background: rgba(59,130,246,0.15); color: #3B82F6; }
+.dm-hint { font-size: 0.8rem; color: var(--text-muted, #777); margin-top: 0.5rem; }
+.dm-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.dm-actions .btn { font-size: 0.85rem; padding: 0.5rem 1rem; }

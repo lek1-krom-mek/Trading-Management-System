@@ -17,9 +17,10 @@ import { renderStrategiesPage, renderStrategyDetail, openStrategyForm } from './
 import { renderJournalPage, openJournalForm } from './journal.js';
 import { renderCalendarPage } from './calendar.js';
 import { renderDoctrineChecklistPage } from './doctrine.js';
-import { renderPlansPage, openPlanForm } from './plans.js';
+import { renderSniperPage } from './sniper.js';
 import { el, fmtMoney, fmtPct, ACCOUNT_TYPES, initials } from './utils.js';
-import { db, uid } from './db.js';
+import { db, uid, init as initDb, getMode } from './db.js';
+import { openDataManager } from './data-manager.js';
 
 // Expose inline handlers (calculator uses onclick in JSX-free HTML)
 window.setTrades   = setTrades;
@@ -31,8 +32,8 @@ register('dashboard',   renderDashboardPage);
 register('accounts',    (param) => param ? renderAccountDetail(param) : renderAccountsPage());
 register('strategies',  (param) => param ? renderStrategyDetail(param) : renderStrategiesPage());
 register('journal',     renderJournalPage);
-register('plans',       renderPlansPage);
 register('calendar',    renderCalendarPage);
+register('sniper',      renderSniperPage);
 register('doctrine',    (param) => {
   if (param === 'checklist') renderDoctrineChecklistPage();
   else go('dashboard');
@@ -97,7 +98,6 @@ function onAddClick() {
     case 'accounts':    openAccountForm();   break;
     case 'strategies':  openStrategyForm();  break;
     case 'journal':     openJournalForm();   break;
-    case 'plans':       openPlanForm();      break;
     case 'calendar':    openJournalForm();   break;
     case 'calculator':
     case 'dashboard':
@@ -248,17 +248,33 @@ async function boot() {
   loadState();
   initTheme();
   initBackground();
+
+  // Restore sidebar collapse state
+  if (localStorage.getItem('tms-sidebar-collapsed')) {
+    document.body.classList.add('sidebar-collapsed');
+  }
+
   restoreControls();
   bindInputs();
   render();
 
   // Wire the sidebar/nav/theme buttons
-  document.querySelectorAll('.nav-item').forEach(btn =>
+  document.querySelectorAll('.nav-item[data-nav]').forEach(btn =>
     btn.addEventListener('click', () => { go(btn.dataset.nav); closeMobileSidebar(); })
   );
   document.getElementById('sidebar-add').addEventListener('click', () => { onAddClick(); closeMobileSidebar(); });
+  document.getElementById('sidebar-data')?.addEventListener('click', () => { openDataManager(); closeMobileSidebar(); });
   document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
   document.getElementById('sidebar-account').addEventListener('click', () => { go('accounts'); closeMobileSidebar(); });
+
+  // Sidebar collapse toggle (desktop)
+  document.getElementById('sidebar-collapse')?.addEventListener('click', () => {
+    document.body.classList.toggle('sidebar-collapsed');
+    localStorage.setItem('tms-sidebar-collapsed', document.body.classList.contains('sidebar-collapsed') ? '1' : '');
+  });
+
+  // Mobile close button
+  document.getElementById('sidebar-close')?.addEventListener('click', closeMobileSidebar);
 
   // Mobile sidebar toggle
   const menuBtn = document.getElementById('mobile-menu-btn');
@@ -280,6 +296,8 @@ async function boot() {
     localStorage.setItem('tms-seed-v2', '1');
   }
 
+  await initDb();
+  console.log(`[tms] storage mode: ${getMode()}`);
   await loadAll();
   await cleanupSeededSamples();
   await backfillStartingCapital();
@@ -301,7 +319,6 @@ async function boot() {
       accounts:  () => r.param ? renderAccountDetail(r.param) : renderAccountsPage(),
       strategies: () => r.param ? renderStrategyDetail(r.param) : renderStrategiesPage(),
       journal:   renderJournalPage,
-      plans:     renderPlansPage,
       calendar:  renderCalendarPage,
       calculator: renderCalcMeta,
       doctrine:  () => r.param === 'checklist' ? renderDoctrineChecklistPage() : null,

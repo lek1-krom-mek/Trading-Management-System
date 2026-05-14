@@ -2,7 +2,7 @@
  * doctrine.js — Editor for the global discipline checklist.
  */
 
-import { el, iconSVG } from './utils.js';
+import { el, iconSVG, confirmDialog } from './utils.js';
 import { data, globalChecks, saveCheck, deleteCheck } from './store.js';
 import { checklistEditor } from './checklist.js';
 import { go } from './router.js';
@@ -32,7 +32,13 @@ export function renderDoctrineChecklistPage() {
       renderDoctrineChecklistPage();
     },
     onDelete: async (id) => {
-      if (!confirm('Remove this check? Existing plans that reference it will keep their original grade.')) return;
+      const ok = await confirmDialog({
+        title: 'Remove this check?',
+        message: 'Existing plans that reference it keep their original grade.',
+        confirmLabel: 'Remove',
+        danger: true,
+      });
+      if (!ok) return;
       await deleteCheck(id);
       renderDoctrineChecklistPage();
     },

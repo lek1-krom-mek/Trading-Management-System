@@ -5,11 +5,10 @@
 
 import { data, savejournal, deletejournal, strategyById, accountById, saveAccount, journalStrategyIds, journalHasStrategy, executePlan } from './store.js';
 import { openFormPanel, field, textInput, numberInput, textArea, select, toggleGroup, imageUpload, multiChips, readForm } from './forms.js';
-import { el, INSTRUMENTS, TIMEFRAMES, iconSVG, toast, fmtDate, fmtRelative, customSelect } from './utils.js';
+import { el, INSTRUMENTS, TIMEFRAMES, iconSVG, toast, fmtDate, fmtRelative, fmtMoney, customSelect, imageLightbox } from './utils.js';
 import { emptyState } from './accounts.js';
-import { sopChecklistField, gradeClass } from './sop-checklist.js';
 
-let filters = { strategy: 'all', account: 'all', result: 'all', instrument: 'all', grade: 'all' };
+let filters = { strategy: 'all', account: 'all', result: 'all', instrument: 'all' };
 
 // Signed P&L delta a journal entry contributes to its account.
 function signedDelta(result, amount) {
@@ -57,23 +56,13 @@ export function renderJournalPage() {
     { value: 'be',   label: 'Breakeven' },
   ]));
   bar.appendChild(filterSelect('Instrument', 'instrument', [{ value: 'all', label: 'All instruments' }, ...INSTRUMENTS.map(i => ({ value: i, label: i }))]));
-  bar.appendChild(filterSelect('Grade', 'grade', [
-    { value: 'all',         label: 'All grades' },
-    { value: 'A',           label: 'A' },
-    { value: 'B',           label: 'B' },
-    { value: 'C',           label: 'C' },
-    { value: 'Off-SOP',     label: 'Off-SOP' },
-    { value: 'Pre-grading', label: 'Pre-grading' },
-  ]));
   root.appendChild(bar);
 
   const filtered = data.journals.filter(b =>
     (filters.strategy === 'all'   || journalHasStrategy(b, filters.strategy)) &&
     (filters.account === 'all'    || b.accountId === filters.account) &&
     (filters.result === 'all'     || b.result === filters.result) &&
-    (filters.instrument === 'all' || b.instrument === filters.instrument) &&
-    (filters.grade === 'all'
-      || (filters.grade === 'Pre-grading' ? b.preGrading === true : b.grade === filters.grade))
+    (filters.instrument === 'all' || b.instrument === filters.instrument)
   );
 
   if (!filtered.length) {
@@ -106,14 +95,9 @@ function journalCard(b) {
       if (e.target.closest('button')) return;
       openJournalDetail(b);
     } },
-    el('div', { class: 'bt-thumb-lg', style: b.screenshotPath ? { backgroundImage: `url(${b.screenshotPath})` } : {} },
+    el('div', { class: 'bt-thumb-lg', style: (b.screenshotPathUrl || b.screenshotPath) ? { backgroundImage: `url(${b.screenshotPathUrl || b.screenshotPath})` } : {} },
       !b.screenshotPath ? el('div', { class: 'bt-thumb-placeholder' }, 'no image') : null,
       el('span', { class: 'bt-result-badge ' + (b.result || 'be') }, (b.result || 'be').toUpperCase()),
-      b.preGrading
-        ? el('span', { class: 'grade-pill grade-pill--pre-grading bt-grade-badge' }, 'Pre-grading')
-        : (b.grade
-          ? el('span', { class: `grade-pill grade-pill--${gradeClass(b.grade)} bt-grade-badge` }, b.grade)
-          : null),
       b.rAchieved ? el('span', { class: 'bt-r-badge' }, b.rAchieved + 'R') : null
     ),
     el('div', { class: 'bt-card-body' },
@@ -162,14 +146,40 @@ export function openJournalDetail(b) {
         )
       )
     ),
-    b.screenshotPath
-      ? el('div', { class: 'bt-detail-image' }, el('img', { src: b.screenshotPath, alt: '' }))
+    (b.screenshotPath || b.exitScreenshotPath)
+      ? el('div', { class: 'bt-detail-images' },
+          b.screenshotPath
+            ? el('figure', { class: 'bt-detail-image' },
+                el('figcaption', { class: 'bt-detail-image-cap' }, 'Entry'),
+                el('img', {
+                  src: b.screenshotPathUrl || b.screenshotPath,
+                  alt: 'Entry screenshot',
+                  style: { cursor: 'zoom-in' },
+                  onClick: () => imageLightbox(b.screenshotPathUrl || b.screenshotPath, 'Entry screenshot'),
+                })
+              )
+            : null,
+          b.exitScreenshotPath
+            ? el('figure', { class: 'bt-detail-image' },
+                el('figcaption', { class: 'bt-detail-image-cap' }, 'Exit · TP / SL'),
+                el('img', {
+                  src: b.exitScreenshotPathUrl || b.exitScreenshotPath,
+                  alt: 'Exit screenshot',
+                  style: { cursor: 'zoom-in' },
+                  onClick: () => imageLightbox(b.exitScreenshotPathUrl || b.exitScreenshotPath, 'Exit screenshot'),
+                })
+              )
+            : null,
+        )
       : el('div', { class: 'bt-detail-image empty' }, 'No screenshot'),
     el('div', { class: 'bt-detail-meta' },
       metaPill('Result', (b.result || '—').toUpperCase(), `result ${b.result}`),
-      metaPill('Grade', b.preGrading ? 'Pre-grading' : (b.grade || '—'),
-        b.preGrading ? 'grade-pre-grading' : (b.grade ? `grade-${gradeClass(b.grade)}` : '')),
       metaPill('R achieved', b.rAchieved ? b.rAchieved + 'R' : '—'),
+      metaPill(
+        b.result === 'loss' ? 'Amount lost ($)' : b.result === 'win' ? 'Amount won ($)' : 'Amount ($)',
+        b.amount ? fmtMoney(b.amount, { dp: 0 }) : '—',
+        'amount ' + (b.result || '')
+      ),
       metaPill('Account', a?.name || 'Unassigned'),
       metaPill('Entry', fmtDate(b.entryDate || b.createdAt))
     ),
@@ -227,21 +237,20 @@ export function openJournalForm(existing = null, defaults = {}) {
     });
   });
 
-  const sopField = sopChecklistField({ name: 'sopChecks', value: b.sopChecks || null });
-
   const body = el('div', {},
     isDisciplineViolation
       ? el('div', { class: 'discipline-warning-banner' },
           el('strong', {}, 'Discipline violation warning:'),
           ' This plan failed must-pass checks. Logging it anyway will be recorded as a discipline violation.')
       : null,
-    field('Screenshot', imageUpload({ name: 'screenshotPath', value: b.screenshotPath || '' })),
+    row(
+      field('Entry screenshot', imageUpload({ name: 'screenshotPath',     value: b.screenshotPath     || '' }), 'Chart at the moment of trade entry.'),
+      field('Exit screenshot',  imageUpload({ name: 'exitScreenshotPath', value: b.exitScreenshotPath || '' }), 'Chart when TP / SL hit — optional, log after the trade closes.')
+    ),
     field('Strategies', stratOpts.length
       ? multiChips({ name: 'strategyIds', values: initialStrategyIds, options: stratOpts })
       : el('div', { class: 'form-empty-note' }, 'Create a strategy first.'),
       'Tap one or more strategies that contributed to this trade.'),
-    sectionHeader('SOP CHECKLIST'),
-    sopField,
     field('Account', select({ name: 'accountId', value: b.accountId || '', options: acctOpts })),
     row(
       field('Instrument', select({ name: 'instrument', value: b.instrument || 'XAU/USD', options: INSTRUMENTS.map(i => ({ value: i, label: i })) })),
@@ -262,6 +271,7 @@ export function openJournalForm(existing = null, defaults = {}) {
   openFormPanel({
     title: existing ? 'Edit journal entry' : 'New journal entry',
     body,
+    width: 760,
     submitLabel: existing ? 'Save changes' : 'Save entry',
     onDelete: existing ? async () => {
       // Reverse the account balance effect this entry had.
@@ -271,11 +281,7 @@ export function openJournalForm(existing = null, defaults = {}) {
       toast('Journal entry deleted');
     } : null,
     onSubmit: async (form) => {
-      if (!sopField.isFullyTouched()) {
-        toast('Review all 8 SOP rules before saving.');
-        throw new Error('sop-not-touched');
-      }
-      const raw = readForm(form, ['tags', 'strategyIds'], ['sopChecks']);
+      const raw = readForm(form, ['tags', 'strategyIds'], []);
 
       const oldResult = existing ? existing.result : null;
       const oldAmount = existing ? existing.amount : 0;
@@ -300,9 +306,9 @@ export function openJournalForm(existing = null, defaults = {}) {
         rAchieved: newResult === 'win' ? (parseFloat(raw.rAchieved) || 0) : 0,
         amount: newAmount,
         screenshotPath: raw.screenshotPath || b.screenshotPath || '',
+        exitScreenshotPath: raw.exitScreenshotPath || b.exitScreenshotPath || '',
         description: raw.description,
         tags: raw.tags || [],
-        sopChecks: raw.sopChecks || sopField.getState(),
       };
       const savedJournal = await savejournal(obj);
 

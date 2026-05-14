@@ -1,58 +1,148 @@
 /**
- * forms.js — Slide-in form panel primitives shared by account/strategy/journal forms.
+ * forms.js — Centered modal-dialog primitives shared by account/strategy/journal forms.
  */
 
-import { el, customSelect } from './utils.js';
+import { el, customSelect, confirmDialog } from './utils.js';
 
 let activePanel = null;
+let titleSeq = 0;
 
-function closePanel() {
+async function closePanel(force = false) {
   if (!activePanel) return;
-  activePanel.overlay.classList.remove('open');
-  activePanel.panel.classList.remove('open');
+  if (!force) {
+    const isClean = !activePanel.dirty;
+    const ok = await confirmDialog({
+      title:        isClean ? 'Close form?'                          : 'Discard changes?',
+      message:      isClean ? 'You can reopen it anytime from the New button.' : 'Your unsaved edits will be lost.',
+      confirmLabel: isClean ? 'Close'                                : 'Discard',
+      cancelLabel:  isClean ? 'Keep open'                            : 'Keep editing',
+      danger:       !isClean,
+    });
+    if (!ok) return;
+  }
+  if (!activePanel) return;
+  const { overlay, panel, onKey, releaseFocus, prevOverflow, prevFocus } = activePanel;
+  document.removeEventListener('keydown', onKey, true);
+  overlay.classList.remove('open');
+  panel.classList.remove('open');
+  document.body.style.overflow = prevOverflow;
+  releaseFocus?.();
   setTimeout(() => {
-    activePanel?.overlay.remove();
-    activePanel = null;
-  }, 280);
+    overlay.remove();
+    if (prevFocus && typeof prevFocus.focus === 'function') prevFocus.focus();
+  }, 200);
+  activePanel = null;
 }
 
-export function openFormPanel({ title, body, onSubmit, submitLabel = 'Save', onDelete = null, width = 460 }) {
-  closePanel();
-  const overlay = el('div', { class: 'form-overlay' });
-  const panel = el('aside', { class: 'form-panel', style: { maxWidth: width + 'px' } },
-    el('header', { class: 'form-panel-header' },
-      el('h2', {}, title),
-      el('button', { class: 'icon-btn', onClick: closePanel, 'aria-label': 'Close' },
-        el('span', { html: '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>' })
-      )
-    ),
-    el('form', { class: 'form-body', onSubmit: (e) => {
-      e.preventDefault();
-      try { const r = onSubmit(e.target); if (r && r.then) r.then(closePanel).catch(err => console.error(err)); else closePanel(); }
-      catch(err) { console.error(err); }
-    } },
-      body,
-      el('footer', { class: 'form-panel-footer' },
-        onDelete ? el('button', { type: 'button', class: 'btn btn-ghost-danger', onClick: async () => { await onDelete(); closePanel(); } }, 'Delete') : null,
-        el('div', { class: 'form-panel-spacer' }),
-        el('button', { type: 'button', class: 'btn btn-ghost', onClick: closePanel }, 'Cancel'),
-        el('button', { type: 'submit', class: 'btn btn-primary' }, submitLabel)
-      )
-    )
+function trapFocus(panel) {
+  const SEL = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]):not([type=hidden]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  function focusable() { return Array.from(panel.querySelectorAll(SEL)).filter(n => n.offsetParent !== null || n === document.activeElement); }
+  function onKey(e) {
+    if (e.key !== 'Tab') return;
+    const items = focusable();
+    if (!items.length) return;
+    const first = items[0];
+    const last = items[items.length - 1];
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+  }
+  panel.addEventListener('keydown', onKey);
+  return () => panel.removeEventListener('keydown', onKey);
+}
+
+export function openFormPanel({ title, body, onSubmit, submitLabel = 'Save', onDelete = null, width = 560 }) {
+  closePanel(true);
+  const titleId = 'form-modal-title-' + (++titleSeq);
+
+  const closeBtn = el('button', { class: 'form-close-btn', type: 'button', 'aria-label': 'Close' },
+    el('span', { html: '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>' })
   );
-  overlay.appendChild(panel);
+  closeBtn.addEventListener('click', () => closePanel());
+
+  const cancelBtn = el('button', { type: 'button', class: 'btn btn-ghost' }, 'Cancel');
+  cancelBtn.addEventListener('click', () => closePanel());
+
+  const submitBtn = el('button', { type: 'button', class: 'btn btn-primary' }, submitLabel);
+  submitBtn.addEventListener('click', () => form.requestSubmit());
+
+  const deleteBtn = onDelete
+    ? el('button', { type: 'button', class: 'btn btn-ghost-danger' }, 'Delete')
+    : null;
+  if (deleteBtn) deleteBtn.addEventListener('click', async () => {
+    const ok = await confirmDialog({
+      title: 'Delete this entry?',
+      message: 'This cannot be undone.',
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!ok) return;
+    try { await onDelete(); closePanel(true); } catch(err) { console.error(err); }
+  });
+
+  const form = el('form', { class: 'form-body', noValidate: true, onSubmit: async (e) => {
+    e.preventDefault();
+    submitBtn.disabled = true;
+    submitBtn.classList.add('loading');
+    try {
+      const r = onSubmit(e.target);
+      if (r && r.then) await r;
+      closePanel(true);
+    } catch (err) { console.error(err); }
+    finally {
+      submitBtn.disabled = false;
+      submitBtn.classList.remove('loading');
+    }
+  } },
+    body,
+  );
+
+  const footer = el('footer', { class: 'form-panel-footer' },
+    deleteBtn,
+    el('div', { class: 'form-panel-spacer' }),
+    cancelBtn,
+    submitBtn,
+  );
+
+  const panel = el('div', {
+    class: 'form-panel',
+    role: 'dialog',
+    'aria-modal': 'true',
+    'aria-labelledby': titleId,
+    style: { maxWidth: width + 'px' },
+  },
+    el('header', { class: 'form-panel-header' },
+      el('h2', { id: titleId }, title),
+      closeBtn,
+    ),
+    form,
+    footer,
+  );
+
+  const overlay = el('div', { class: 'form-overlay' }, panel);
   overlay.addEventListener('click', (e) => { if (e.target === overlay) closePanel(); });
+
+  const prevFocus = document.activeElement;
+  const prevOverflow = document.body.style.overflow;
+  document.body.style.overflow = 'hidden';
   document.body.appendChild(overlay);
-  activePanel = { overlay, panel };
-  // animate in
+
+  const releaseFocus = trapFocus(panel);
+  const onKey = (e) => { if (e.key === 'Escape') { e.preventDefault(); closePanel(); } };
+  document.addEventListener('keydown', onKey, true);
+
+  activePanel = { overlay, panel, onKey, releaseFocus, prevOverflow, prevFocus, dirty: false };
+
+  // Track unsaved changes for the confirm-on-close guard
+  form.addEventListener('input',  () => { if (activePanel) activePanel.dirty = true; });
+  form.addEventListener('change', () => { if (activePanel) activePanel.dirty = true; });
+
+  // Animate in + focus first field
   requestAnimationFrame(() => {
     overlay.classList.add('open');
     panel.classList.add('open');
-    const firstInput = panel.querySelector('input, textarea, select');
+    const firstInput = panel.querySelector('input:not([type=hidden]), textarea, select, [tabindex]:not([tabindex="-1"])');
     firstInput?.focus();
   });
-  const onKey = e => { if (e.key === 'Escape') { closePanel(); document.removeEventListener('keydown', onKey); } };
-  document.addEventListener('keydown', onKey);
 }
 
 // ── Common form field builders ────────────────────────
@@ -122,7 +212,21 @@ export function imageUpload({ name, value = '', onChange }) {
   const wrap = el('div', { class: 'image-upload' });
   const hidden = el('input', { type: 'hidden', name, value });
   const preview = el('div', { class: 'image-upload-preview' + (value ? ' has-image' : '') });
-  if (value) preview.style.backgroundImage = `url(${value})`;
+  if (value) {
+    if (value.startsWith('idb://')) {
+      // IDB-stored screenshots aren't browser-renderable; resolve to a blob URL for display
+      // while keeping the canonical idb:// path on the hidden input for save.
+      (async () => {
+        try {
+          const { resolveScreenshotUrl } = await import('./db.js');
+          const url = await resolveScreenshotUrl(value);
+          if (url) preview.style.backgroundImage = `url(${url})`;
+        } catch (err) { console.error('Preview resolve failed', err); }
+      })();
+    } else {
+      preview.style.backgroundImage = `url(${value})`;
+    }
+  }
   const placeholder = el('div', { class: 'image-upload-placeholder' },
     el('span', { html: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>' })
   );
@@ -137,10 +241,14 @@ export function imageUpload({ name, value = '', onChange }) {
     preview.style.backgroundImage = `url(${localUrl})`;
     preview.classList.add('has-image', 'uploading');
     try {
-      const { uploadScreenshot } = await import('./db.js');
+      const { uploadScreenshot, resolveScreenshotUrl } = await import('./db.js');
       const serverPath = await uploadScreenshot(file);
       hidden.value = serverPath;
-      preview.style.backgroundImage = `url(${serverPath})`;
+      // IDB returns `idb://...` (not browser-renderable); resolve to blob URL for preview.
+      const displayUrl = serverPath.startsWith('idb://')
+        ? await resolveScreenshotUrl(serverPath)
+        : serverPath;
+      if (displayUrl) preview.style.backgroundImage = `url(${displayUrl})`;
       onChange?.(serverPath);
     } catch (err) {
       console.error('Upload failed', err);

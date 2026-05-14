@@ -31,10 +31,23 @@ export function renderAccountsPage() {
   root.appendChild(grid);
 }
 
+// Drawdown-used calculation — mirrors dashboard.accountStripCard.
+// Returns { ddUsed: 0..100, maxLossDollars: number|null }.
+function computeDDUsed(a) {
+  const pnl = (a.capital || 0) - (a.startingCapital || 0);
+  const maxLossDollars = a.rules?.maxLossPct
+    ? (a.startingCapital * a.rules.maxLossPct / 100)
+    : null;
+  const ddUsed = a.startingCapital && maxLossDollars
+    ? Math.min(100, Math.max(0, Math.abs(Math.min(0, pnl)) / maxLossDollars * 100))
+    : 0;
+  return { ddUsed, maxLossDollars };
+}
+
 function accountCard(a) {
   const type = ACCOUNT_TYPES[a.type] || ACCOUNT_TYPES['own-funds'];
   const status = ACCOUNT_STATUSES[a.status] || ACCOUNT_STATUSES.active;
-  const balancePct = a.startingCapital ? Math.min(100, Math.max(0, (a.capital / a.startingCapital) * 100)) : 100;
+  const { ddUsed, maxLossDollars } = computeDDUsed(a);
   const pnl = (a.capital || 0) - (a.startingCapital || 0);
   const strategies = (a.strategyIds || []).map(strategyById).filter(Boolean);
   const isActive = data.activeAccountId === a.id;
@@ -62,11 +75,13 @@ function accountCard(a) {
       )
     ),
     el('div', { class: 'balance-bar' },
-      el('div', { class: 'balance-bar-fill', style: { width: balancePct + '%', background: pnl >= 0 ? 'linear-gradient(90deg, var(--gold-dim), var(--gold))' : 'linear-gradient(90deg, #7f1d1d, #F87171)' } })
+      el('div', { class: 'balance-bar-fill', style: { width: ddUsed + '%', background: 'linear-gradient(90deg, var(--gold), var(--red))' } })
     ),
     el('div', { class: 'balance-foot' },
-      el('span', {}, `Starting ${fmtMoney(a.startingCapital || 0, { dp: 0 })}`),
-      el('span', {}, balancePct.toFixed(1) + '%')
+      el('span', {}, maxLossDollars
+        ? `DD limit ${fmtMoney(maxLossDollars, { dp: 0 })}`
+        : 'No DD limit set'),
+      el('span', {}, maxLossDollars ? `DD used ${ddUsed.toFixed(0)}%` : '—')
     ),
     a.rules ? el('div', { class: 'rule-pills' },
       a.rules.dailyLossPct ? el('span', { class: 'rule-pill' }, `DL ${a.rules.dailyLossPct}%`) : null,
@@ -152,6 +167,25 @@ export function openAccountForm(existing = null) {
         field('VPS host', textInput({ name: 'vps', value: a.vps || '', placeholder: 'Optional' })),
         field('Daily loss %', numberInput({ name: 'dailyLossPct', value: r.dailyLossPct ?? 5, step: '0.1' }))
       );
+    } else if (type === 'backtest') {
+      common.push(
+        row(
+          field('Period start', textInput({ name: 'periodStart', type: 'date', value: a.periodStart || '' })),
+          field('Period end',   textInput({ name: 'periodEnd',   type: 'date', value: a.periodEnd   || '' }))
+        ),
+        row(
+          field('Platform', select({ name: 'platform', value: a.platform || 'tradingview', options: [
+            { value: 'tradingview',  label: 'TradingView' },
+            { value: 'mt4',          label: 'MetaTrader 4' },
+            { value: 'mt5',          label: 'MetaTrader 5' },
+            { value: 'ninjatrader',  label: 'NinjaTrader' },
+            { value: 'manual',       label: 'Manual (paper)' },
+            { value: 'other',        label: 'Other' },
+          ]})),
+          field('Risk per trade %', numberInput({ name: 'riskPerTradePct', value: r.riskPerTradePct ?? 1, step: '0.1' }))
+        ),
+        field('Hypothesis', textInput({ name: 'hypothesis', value: a.hypothesis || '', placeholder: 'What is this backtest testing? e.g. "A-grade SOP setups only, 1% fixed risk"' }))
+      );
     }
     common.forEach(c => typeSpecific.appendChild(c));
   }
@@ -188,6 +222,7 @@ export function openAccountForm(existing = null) {
   openFormPanel({
     title: existing ? 'Edit account' : 'New account',
     body,
+    width: 600,
     submitLabel: existing ? 'Save changes' : 'Create account',
     onDelete: existing ? async () => { await deleteAccount(existing.id); toast('Account deleted'); } : null,
     onSubmit: async (form) => {
@@ -250,7 +285,7 @@ export function renderAccountDetail(id) {
   const pnl = (a.capital || 0) - (a.startingCapital || 0);
   const pnlPct = a.startingCapital ? (pnl / a.startingCapital) * 100 : 0;
   const isActive = data.activeAccountId === a.id;
-  const balancePct = a.startingCapital ? Math.min(100, Math.max(0, (a.capital / a.startingCapital) * 100)) : 100;
+  const { ddUsed, maxLossDollars } = computeDDUsed(a);
 
   const curve = accountEquityCurve(trades, a.startingCapital || 0);
 
@@ -301,11 +336,13 @@ export function renderAccountDetail(id) {
         )
       ),
       el('div', { class: 'balance-bar' },
-        el('div', { class: 'balance-bar-fill', style: { width: balancePct + '%', background: pnl >= 0 ? 'linear-gradient(90deg, var(--gold-dim), var(--gold))' : 'linear-gradient(90deg, #7f1d1d, #F87171)' } })
+        el('div', { class: 'balance-bar-fill', style: { width: ddUsed + '%', background: 'linear-gradient(90deg, var(--gold), var(--red))' } })
       ),
       el('div', { class: 'balance-foot' },
-        el('span', {}, `Starting ${fmtMoney(a.startingCapital || 0, { dp: 0 })}`),
-        el('span', {}, balancePct.toFixed(1) + '%')
+        el('span', {}, maxLossDollars
+          ? `DD limit ${fmtMoney(maxLossDollars, { dp: 0 })}`
+          : 'No DD limit set'),
+        el('span', {}, maxLossDollars ? `DD used ${ddUsed.toFixed(0)}%` : '—')
       ),
       a.rules ? el('div', { class: 'rule-pills', style: { marginTop: '14px' } },
         a.rules.dailyLossPct ? el('span', { class: 'rule-pill' }, `Daily ${a.rules.dailyLossPct}%`) : null,

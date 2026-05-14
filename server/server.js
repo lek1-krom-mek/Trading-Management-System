@@ -61,6 +61,7 @@ try {
     backfill();
   }
   if (!cols.includes('plan_id')) db.exec('ALTER TABLE journals ADD COLUMN plan_id TEXT');
+  if (!cols.includes('exit_screenshot_path')) db.exec('ALTER TABLE journals ADD COLUMN exit_screenshot_path TEXT');
   if (!cols.includes('sop_checks'))       db.exec('ALTER TABLE journals ADD COLUMN sop_checks TEXT');
   if (!cols.includes('grade'))            db.exec('ALTER TABLE journals ADD COLUMN grade TEXT');
   if (!cols.includes('confluence_count')) db.exec('ALTER TABLE journals ADD COLUMN confluence_count INTEGER');
@@ -315,6 +316,7 @@ const MAPPERS = {
         r_achieved: b.rAchieved ?? null,
         amount: b.amount ?? null,
         screenshot_path: b.screenshotPath ?? null,
+        exit_screenshot_path: b.exitScreenshotPath ?? null,
         description: b.description ?? null,
         tags: JSON.stringify(b.tags ?? []),
         plan_id: b.planId ?? null,
@@ -341,6 +343,7 @@ const MAPPERS = {
         rAchieved: r.r_achieved,
         amount: r.amount,
         screenshotPath: r.screenshot_path,
+        exitScreenshotPath: r.exit_screenshot_path,
         description: r.description,
         tags: r.tags ? JSON.parse(r.tags) : [],
         planId: r.plan_id,
@@ -522,8 +525,9 @@ app.delete('/api/:store/:id', (req, res) => {
   if (!isStore(store)) return res.status(404).json({ error: 'Unknown store' });
 
   if (store === 'journals') {
-    const row = db.prepare('SELECT screenshot_path FROM journals WHERE id = ?').get(id);
+    const row = db.prepare('SELECT screenshot_path, exit_screenshot_path FROM journals WHERE id = ?').get(id);
     if (row?.screenshot_path) deleteUpload(row.screenshot_path);
+    if (row?.exit_screenshot_path) deleteUpload(row.exit_screenshot_path);
     // Unlink any plan that referenced this journal
     db.prepare('UPDATE trade_plans SET journal_id = NULL WHERE journal_id = ?').run(id);
   }
