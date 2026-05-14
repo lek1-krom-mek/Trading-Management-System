@@ -213,6 +213,86 @@ Then restart the server (`Ctrl+C`, then `npm start` again). Your data is safe �
 
 ---
 
+## Run automatically on startup (optional)
+
+If you don't want to open a terminal every time you reboot your computer, you can have the TMS server start itself in the background. The easiest way is **PM2** — a small tool that keeps Node.js apps running, restarts them if they crash, and re-launches them after a reboot.
+
+This works on **Windows, macOS, and Linux** with the same three commands.
+
+### One-time setup
+
+1. **Install PM2 once** (open your terminal — Git Bash on Windows, Terminal on macOS/Linux):
+
+   ```bash
+   npm install -g pm2
+   ```
+
+   > On macOS / Linux, if you get a permission error, run `sudo npm install -g pm2`.
+
+2. **Tell PM2 to run the TMS server.** From the project folder:
+
+   ```bash
+   cd server
+   pm2 start server.js --name tms
+   pm2 save
+   ```
+
+3. **Tell your OS to launch PM2 at boot.**
+
+   <details>
+   <summary><b>🪟 Windows</b></summary>
+
+   ```bash
+   npm install -g pm2-windows-startup
+   pm2-startup install
+   pm2 save
+   ```
+
+   </details>
+
+   <details>
+   <summary><b>🐧 Linux / 🍎 macOS</b></summary>
+
+   ```bash
+   pm2 startup
+   ```
+
+   PM2 will print a `sudo …` command — **copy that exact line, paste it into your terminal, and press Enter**. That's what registers the auto-start with your OS.
+
+   Then save again:
+   ```bash
+   pm2 save
+   ```
+
+   </details>
+
+That's it. Reboot to test — open http://localhost:3000 immediately after login (no terminal needed).
+
+### Day-to-day PM2 commands
+
+| What you want | Command |
+|---------------|---------|
+| Check if it's running | `pm2 list` |
+| See the live logs | `pm2 logs tms` |
+| Restart it (e.g. after `git pull`) | `pm2 restart tms` |
+| Stop it temporarily | `pm2 stop tms` |
+| Start it again | `pm2 start tms` |
+| Remove it from auto-start | `pm2 delete tms && pm2 save` |
+| Turn off auto-start completely | **Windows:** `pm2-startup uninstall` &nbsp;•&nbsp; **macOS/Linux:** `pm2 unstartup` |
+
+### Updating the app when PM2 is managing it
+
+```bash
+cd server
+git pull
+npm install
+pm2 restart tms
+```
+
+> **Heads up:** if you previously ran the server manually with `npm start` and then set up PM2, kill the old terminal first. Two copies fighting over port 3000 will misbehave. Check with `pm2 list` and a fresh look at http://localhost:3000.
+
+---
+
 ## Pages / workspaces
 
 | Page | What it's for |
