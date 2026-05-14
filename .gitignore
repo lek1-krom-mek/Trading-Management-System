@@ -2,7 +2,7 @@ tms.db
 tms.db-journal
 tms.db-shm
 tms.db-wal
-uploads/bt-*
+uploads/*
 .DS_Store
 what-I-have-to-update.md
 .claude/
